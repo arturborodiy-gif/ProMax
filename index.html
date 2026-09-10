@@ -1,0 +1,889 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ProMax — транспортна база</title>
+<style>
+body{font-family:Arial,sans-serif;margin:0;background:#eef3f7;color:#1d2939}
+header{background:#173f5f;color:white;padding:18px 24px;display:flex;justify-content:space-between;align-items:center}
+h1{margin:0;font-size:22px}.wrap{display:flex;min-height:calc(100vh - 64px)}
+nav{width:210px;background:#fff;border-right:1px solid #d8dee6;padding:12px}
+nav button{width:100%;padding:11px;margin:4px 0;border:0;background:#f0f4f8;text-align:left;border-radius:6px;cursor:pointer}
+nav button.active{background:#173f5f;color:#fff}
+main{flex:1;padding:22px;overflow:auto}.card{background:#fff;border-radius:10px;padding:18px;margin-bottom:18px;box-shadow:0 1px 4px #0001}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+label{font-size:12px;font-weight:bold;display:block;margin-bottom:4px}input,select{width:100%;box-sizing:border-box;padding:9px;border:1px solid #cbd5e1;border-radius:5px}
+button.primary{background:#173f5f;color:#fff;border:0;padding:10px 16px;border-radius:6px;cursor:pointer}
+button.danger{background:#b42318;color:#fff;border:0;padding:7px 10px;border-radius:5px;cursor:pointer}
+table{border-collapse:collapse;width:100%;font-size:13px;background:#fff}th,td{border:1px solid #dbe2e8;padding:7px;white-space:nowrap}th{background:#dceaf4}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.kpi{background:#fff;padding:16px;border-radius:9px}.kpi b{display:block;font-size:22px;margin-top:6px}
+.hidden{display:none}.paid{background:#e7f6ea}.unpaid{background:#fde8e8}
+.small{font-size:12px;color:#667085}.rating-good{background:#e7f6ea}.rating-mid{background:#fff4cc}.rating-bad{background:#fde8e8}.edit{background:#475467;color:#fff;border:0;padding:7px 10px;border-radius:5px;cursor:pointer}
+
+.report-controls{background:#fff;border-radius:10px;padding:18px;margin-bottom:18px;box-shadow:0 1px 4px #0001}
+.report-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
+.report-kpi{background:#fff;border:1px solid #e1e7ee;border-radius:10px;padding:15px}
+.report-kpi span{display:block;color:#667085;font-size:12px;font-weight:bold}
+.report-kpi strong{display:block;font-size:24px;margin-top:7px}
+.charts-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-bottom:18px}
+.chart-card{background:#fff;border-radius:10px;padding:18px;box-shadow:0 1px 4px #0001;min-height:330px}
+.chart-title{font-size:16px;font-weight:bold;margin-bottom:4px}
+.chart-sub{font-size:12px;color:#667085;margin-bottom:15px}
+.bars{display:flex;align-items:flex-end;gap:12px;height:235px;padding:12px 8px 4px;border-bottom:1px solid #cbd5e1}
+.bar-wrap{height:100%;flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;min-width:35px}
+.bar{width:min(52px,80%);background:#173f5f;border-radius:5px 5px 0 0;min-height:2px;position:relative}
+.bar-value{font-size:11px;margin-bottom:4px;white-space:nowrap}
+.bar-label{font-size:11px;margin-top:7px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:90px}
+.pie-wrap{display:flex;align-items:center;gap:24px;min-height:235px}
+.pie{width:190px;height:190px;border-radius:50%;background:conic-gradient(#173f5f 0 40%,#4c78a8 40% 65%,#72a0c4 65% 82%,#b8c9d9 82% 100%)}
+.legend{font-size:12px;line-height:1.9}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:7px;background:#173f5f}
+.legend i.c2{background:#4c78a8}.legend i.c3{background:#72a0c4}.legend i.c4{background:#b8c9d9}
+@media(max-width:900px){.charts-grid,.report-kpis{grid-template-columns:1fr 1fr}}
+@media(max-width:650px){.charts-grid,.report-kpis{grid-template-columns:1fr}}
+
+
+/* ProMax 3.0 */
+.section-note{font-size:12px;color:#667085;margin-top:4px}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.badge{display:inline-block;padding:4px 8px;border-radius:999px;font-size:11px;font-weight:bold}
+.badge-green{background:#e7f6ea;color:#16743a}.badge-yellow{background:#fff4cc;color:#8a5a00}.badge-red{background:#fde8e8;color:#b42318}.badge-blue{background:#e7f0f8;color:#173f5f}
+.status-planned{background:#eef3f7}.status-loading{background:#fff4cc}.status-road{background:#e7f0f8}.status-unloading{background:#f4edff}.status-wait{background:#fff0d9}.status-paid{background:#e7f6ea}
+.alert{padding:11px 14px;border-radius:7px;margin:10px 0}.alert-red{background:#fde8e8;color:#8f1d14}.alert-yellow{background:#fff4cc;color:#765000}.alert-green{background:#e7f6ea;color:#166534}
+.scroll-x{overflow:auto}.metric-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.metric{border:1px solid #e1e7ee;border-radius:9px;padding:12px}.metric span{font-size:11px;color:#667085;display:block}.metric b{font-size:20px;display:block;margin-top:5px}
+.small-btn{padding:6px 9px;border:0;border-radius:5px;cursor:pointer;background:#eef3f7}.success{background:#16743a!important;color:#fff}.warn{background:#8a5a00!important;color:#fff}
+.print-btn{float:right}
+.detail-box{background:#f8fafc;border:1px solid #e1e7ee;border-radius:8px;padding:12px;margin-top:10px}
+@media(max-width:800px){.metric-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:600px){.metric-grid{grid-template-columns:1fr}}
+
+
+.oil-ok{background:#e7f6ea}.oil-warn{background:#fff4cc}.oil-danger{background:#fde8e8}
+.oil-card{background:#fff;border:1px solid #e1e7ee;border-radius:10px;padding:15px;margin:10px 0}
+.oil-card h4{margin:0 0 8px}.oil-status{font-weight:bold}
+
+
+#loginOverlay{position:fixed;inset:0;background:rgba(8,20,35,.78);display:flex;align-items:center;justify-content:center;z-index:99999;padding:20px}
+#loginBox{width:min(420px,100%);background:#fff;border-radius:16px;padding:28px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+#loginBox h2{margin-top:0}#loginBox input{width:100%;box-sizing:border-box;margin:10px 0 14px;padding:12px;border:1px solid #ccd5df;border-radius:8px;font-size:18px}
+#loginError{color:#b42318;min-height:22px;margin-bottom:8px;font-weight:600}
+
+
+/* ProMax Mobile Edition */
+.mobile-nav{display:none}
+@media(max-width:700px){
+  html,body{width:100%;min-height:100%;overflow-x:hidden}
+  body{font-size:14px;padding-bottom:68px}
+  header{position:sticky;top:0;z-index:1000;padding:10px 12px;min-height:44px;box-sizing:border-box}
+  header h1{font-size:16px;line-height:1.2}
+  #clock{font-size:10px;white-space:nowrap}
+  .wrap{display:block;min-height:calc(100vh - 64px)}
+  #nav{display:none}
+  main{padding:10px 9px 20px;overflow:visible}
+  main>h2{font-size:20px;margin:8px 2px 12px}
+  .card,.report-controls,.chart-card{border-radius:10px;padding:12px;margin-bottom:12px;box-shadow:0 1px 4px #0001}
+  .grid,.metric-grid,.kpis,.report-kpis,.charts-grid{grid-template-columns:1fr!important;gap:9px}
+  label{font-size:11px}
+  input,select{min-height:42px;font-size:16px;padding:9px}
+  button.primary,button.edit,button.danger,.small-btn{min-height:40px;font-size:14px;padding:9px 11px}
+  .toolbar{gap:6px}
+  .toolbar>*{max-width:100%}
+  .scroll-x{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  table{font-size:12px;min-width:760px}
+  th,td{padding:7px 6px}
+  .chart-card{min-height:260px}
+  .bars{height:180px;gap:6px}
+  .pie-wrap{flex-direction:column;align-items:flex-start;gap:12px}
+  .pie{width:150px;height:150px}
+  .print-btn{float:none}
+  .detail-box{padding:10px}
+  .badge{font-size:10px}
+  .mobile-nav{position:fixed;display:grid;grid-template-columns:repeat(5,1fr);gap:2px;left:0;right:0;bottom:0;height:62px;background:#fff;border-top:1px solid #d8dee6;z-index:9999;padding:4px 4px env(safe-area-inset-bottom);box-sizing:content-box;box-shadow:0 -3px 12px #0001}
+  .mobile-nav button{border:0;background:transparent;border-radius:8px;font-size:10px;line-height:1.15;padding:5px 2px;color:#475467}
+  .mobile-nav button span{display:block;font-size:19px;margin-bottom:2px}
+  .mobile-nav button.active{background:#173f5f;color:#fff}
+  .mobile-more{position:fixed;left:8px;right:8px;bottom:70px;background:#fff;border:1px solid #d8dee6;border-radius:12px;padding:8px;z-index:9998;box-shadow:0 8px 30px #0002;display:none}
+  .mobile-more.open{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  .mobile-more button{padding:10px;border:0;border-radius:8px;background:#f0f4f8;text-align:left}
+  .mobile-more button.active{background:#173f5f;color:#fff}
+}
+@media(max-width:380px){header h1{font-size:14px}#clock{font-size:9px}.mobile-nav button{font-size:9px}.mobile-nav button span{font-size:17px}}
+
+</style>
+<link rel="manifest" href="ProMax_MOBILE_CLOUD.webmanifest"><meta name="theme-color" content="#173f5f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="ProMax"><link rel="apple-touch-icon" href="ProMax-icon-192.png">\n<!-- Supabase cloud backend -->\n<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>\n</head>
+<body>
+<header><h1>ProMax — транспортна база</h1><div style="display:flex;align-items:center;gap:10px"><button id="installBtn" class="primary" style="display:none" onclick="installProMax()">📲 Додати ProMax на головний екран</button><div id="clock"></div></div></header>
+<div class="wrap">
+<nav id="nav">
+<button data-page="dashboard" class="active">🏠 Головна</button>
+<button data-page="trips">🚛 Рейси</button>
+<button data-page="expenses">💸 Витрати</button>
+<button data-page="funds">💰 Фактичні кошти</button>
+<button data-page="customers">🏢 Замовники</button>
+<button data-page="drivers">👤 Водії</button><button data-page="logisticians">🤝 Логісти</button>
+<button data-page="vehicles">🚚 Автомобілі</button>
+<button data-page="cities">📍 Міста</button>
+<button data-page="distances">↔ Відстані</button>
+<button data-page="debtors">💳 Дебіторка</button><button data-page="reports">📊 Звіти</button>
+<button data-page="backup">💾 Резервна копія</button>
+</nav>
+<main id="app"></main>
+</div>
+<div class="mobile-more" id="mobileMore">
+  <button data-page="customers">🏢 Замовники</button>
+  <button data-page="drivers">👤 Водії</button>
+  <button data-page="logisticians">🤝 Логісти</button>
+  <button data-page="vehicles">🚚 Автомобілі</button>
+  <button data-page="cities">📍 Міста</button>
+  <button data-page="distances">↔ Відстані</button>
+  <button data-page="debtors">💳 Дебіторка</button>
+  <button data-page="reports">📊 Звіти</button>
+  <button data-page="backup">💾 Резервна копія</button>
+</div>
+<div class="mobile-nav" id="mobileNav">
+  <button data-page="dashboard"><span>🏠</span>Головна</button>
+  <button data-page="trips"><span>🚛</span>Рейси</button>
+  <button data-page="expenses"><span>💸</span>Витрати</button>
+  <button data-page="funds"><span>💰</span>Кошти</button>
+  <button id="mobileMoreBtn"><span>☰</span>Ще</button>
+</div>
+<script>
+const KEY='promax_db_v1';
+let db={};
+try{ db=JSON.parse(localStorage.getItem(KEY)||'{}'); }
+catch(e){
+  console.warn('ProMax: пошкоджені локальні дані, створюється нова структура.',e);
+  db={};
+}
+const ensureArray=k=>{if(!Array.isArray(db[k])) db[k]=[]};
+['trips','expenses','customers','drivers','logisticians','vehicles','cities','distances','debts','maintenance','tripDocuments'].forEach(ensureArray);
+if(!db.logisticians) db.logisticians=[];
+
+if(!db.debts) db.debts=[];
+if(!db.vehicles) db.vehicles=[];
+if(!db.maintenance) db.maintenance=[];
+if(!db.tripDocuments) db.tripDocuments=[];
+if(!db.drivers) db.drivers=[];
+if(!db.customers) db.customers=[];
+(db.trips||[]).forEach((t,idx)=>{
+  if(!t.uid) t.uid='trip_'+Date.now()+'_'+idx+'_'+Math.random().toString(36).slice(2);
+  if(!t.status) t.status=t.payment==='так'?'Оплачено':'Очікує оплату';
+  if(!('driverId' in t)) t.driverId='';
+  if(!('vehicleId' in t)) t.vehicleId='';
+  if(!('routeDistance' in t)) t.routeDistance=findDistance(t.loadCity,t.unloadCity)||0;
+  if(!('actualFuel' in t)) t.actualFuel='';
+  if(!('maintenanceKm' in t)) t.maintenanceKm='';
+});
+// Convert old document references that used the trip array index to stable trip IDs.
+(db.tripDocuments||[]).forEach(d=>{
+  if(d && typeof d.tripId==='number' && db.trips[d.tripId]) d.tripId=db.trips[d.tripId].uid;
+});
+
+function save(){
+ try{localStorage.setItem(KEY,JSON.stringify(db)); scheduleCloudPush(); return true;}
+ catch(e){
+   console.error('ProMax save error',e);
+   alert('Не вдалося зберегти базу. Сховище браузера переповнене. Видаліть зайві великі документи у «Рейси → Документи» або зробіть резервну копію.');
+   return false;
+ }
+}
+function money(x){return Math.round(Number(x)||0).toLocaleString('uk-UA')}
+function esc(x){return String(x??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
+function id(){return Date.now()+Math.random()}
+function syncVehicleMileage(){
+  // Recalculate current odometer from the vehicle's base odometer plus assigned trip mileage.
+  // Never double-count previously synchronized trips.
+  (db.vehicles||[]).forEach((v,vi)=>{
+    const base=Number(v.baseOdo||0);
+    const added=(db.trips||[]).reduce((sum,t)=>{
+      const assigned=String(t.vehicleId??'')===String(vi) || String(t.vehicleNumber||'')===String(v.number||'');
+      return assigned ? sum+Number(t.total||0) : sum;
+    },0);
+    v.currentOdo=base+added;
+  });
+}
+
+function findDistance(from,to){
+  const a=String(from||'').trim().toUpperCase();
+  const b=String(to||'').trim().toUpperCase();
+  if(!a || !b) return 0;
+  const list=Array.isArray(db.distances)?db.distances:[];
+  const exact=list.find(d=>String(d.from||'').trim().toUpperCase()===a && String(d.to||'').trim().toUpperCase()===b);
+  if(exact) return Number(exact.km)||0;
+  const reverse=list.find(d=>String(d.from||'').trim().toUpperCase()===b && String(d.to||'').trim().toUpperCase()===a);
+  return reverse ? (Number(reverse.km)||0) : 0;
+}
+
+function calc(t){
+ t.total=Number(t.empty||0)+Number(t.loaded||0); if(!t.routeDistance) t.routeDistance=findDistance(t.loadCity,t.unloadCity)||0;
+ if(t.imported && !t.dirty){
+   t.fuel=Number(t.legacyFuel||0);
+   t.tax=Number(t.legacyTax||0);
+   t.fuelCost=Number(t.legacyFuelCost||0);
+   t.profit=Number(t.legacyProfit||0);
+   t.profitHour=Number(t.hours||0)>0?t.profit/Number(t.hours):0;
+   return;
+ }
+ t.fuel=Number(t.empty||0)*.28+Number(t.loaded||0)*.34;
+ t.tax=Number(t.taxable||0)*.06;
+ t.fuelCost=t.fuel*Number(t.fuelPrice||0);
+ t.profit=Number(t.freight||0)-Number(t.perDiem||0)-Number(t.logistics||0)-Number(t.other||0)-t.tax-t.fuelCost;
+ t.profitHour=Number(t.hours||0)>0?t.profit/Number(t.hours):0;
+}
+function layout(title,html){document.getElementById('app').innerHTML=`<h2>${title}</h2>${html}`}
+function table(headers,rows){return `<div style="overflow:auto"><table><thead><tr>${headers.map(x=>`<th>${x}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table></div>`}
+function page(p){
+ document.querySelectorAll('#nav button,[data-page]').forEach(b=>{if(b.dataset.page)b.classList.toggle('active',b.dataset.page===p)});
+ if(p==='dashboard') return dashboard();
+ if(p==='trips') return trips();
+ if(p==='expenses') return expenses();
+ if(p==='funds') return funds();
+ if(p==='customers') return customers();
+ if(p==='drivers') return drivers(); if(p==='logisticians') return logisticians();
+ if(p==='vehicles') return vehicles();
+ if(p==='cities') return cities();
+ if(p==='distances') return distances();
+ if(p==='debtors') return debtors();
+  if(p==='reports') return reports();
+ if(p==='backup') return backup();
+}
+function dashboard(){
+ const received=db.trips.filter(t=>t.payment==='так').reduce((s,t)=>s+Number(t.freight||0),0);
+ syncVehicleMileage(); const profit=db.trips.reduce((s,t)=>s+Number(t.profit||0),0);
+ const expenses=db.trips.reduce((s,t)=>s+Number(t.perDiem||0)+Number(t.logistics||0)+Number(t.other||0)+Number(t.tax||0)+Number(t.fuelCost||0),0)+db.expenses.reduce((s,e)=>s+Number(e.amount||0),0);
+ layout('Головна',`<div class="kpis"><div class="kpi">Рейсів<b>${db.trips.length}</b></div><div class="kpi">Отримані кошти<b>${money(received)}</b></div><div class="kpi">Прибуток<b>${money(profit)}</b></div><div class="kpi">Витрати<b>${money(expenses)}</b></div></div><div class="card"><h3>Дані перенесено — ProMax 2.0 готовий до роботи</h3><p>Існуючі дані з «ProMax_ФІНАЛЬНИЙ_КОШТИ» перенесені в систему. Можеш продовжувати роботу та додавати нові записи. Дані автоматично зберігаються у цьому браузері.</p><p class="small">Паливо: порожній пробіг 28 л/100 км; завантажений 34 л/100 км. Податок: 6%.</p>
+    <div class="detail-box"><b>Контроль мастила:</b> ${(db.vehicles||[]).filter(v=>Number(v.lastOilKm||0)>0 && Number(v.oilInterval||10000)-(Number(v.currentOdo||0)-Number(v.lastOilKm||0))<=0).length} автомобілів потребують заміни.</div></div>`);
+}
+function trips(){
+  syncVehicleMileage();
+  const options=db.logisticians.map((l,i)=>`<option value="${i}">${esc(l.name)}</option>`).join('');
+  const driverOptions=(db.drivers||[]).map((d,i)=>`<option value="${i}">${esc(d.name)}</option>`).join('');
+  const vehicleOptions=(db.vehicles||[]).map((v,i)=>`<option value="${i}">${esc(v.number)} — ${esc(v.model)}</option>`).join('');
+  const form=`<div class="card"><h3>Додати рейс</h3><div class="grid">
+    ${field('Замовник','customer')}${field('Дата завантаження','loadDate','date')}${field('Дата розвантаження','unloadDate','date')}
+    ${cityField('Місце завантаження','loadCity')}${cityField('Місце розвантаження','unloadCity')}${field('Відстань маршруту, км','routeDistance','number')}
+    ${field('Порожній пробіг, км','empty','number')}${field('Завантажений пробіг, км','loaded','number')}${field('Ціна палива, грн/л','fuelPrice','number')}
+    ${field('Фрахт, грн','freight','number')}${field('Сума під оподаткування','taxable','number')}${field('Добові','perDiem','number')}
+    ${field('Логістика','logistics','number')}${field('Інші витрати','other','number')}${field('Години в дорозі','hours','number')}${field('Отримувач','receiver')}
+    <div><label>Водій</label><select id="driver"><option value="">— не вибрано —</option>${driverOptions}</select></div>
+    <div><label>Автомобіль</label><select id="vehicle"><option value="">— не вибрано —</option>${vehicleOptions}</select></div>
+    <div><label>Логіст</label><select id="logistician" onchange="showLogisticInfo()"><option value="">— не вибрано —</option>${options}</select></div>
+    <div><label>Телефон логіста</label><input id="logPhone" readonly></div><div><label>Оцінка співпраці</label><input id="logRating" readonly></div>
+    <div><label>Статус рейсу</label><select id="status"><option>Запланований</option><option>Завантаження</option><option>В дорозі</option><option>Розвантажено</option><option>Очікує оплату</option><option>Оплачено</option></select></div>
+  </div><p><label>Оплата рейсу</label><select id="payment"><option>ні</option><option>так</option></select></p>
+  <button class="primary" onclick="addTrip()">Зберегти рейс</button></div>`;
+
+  const rows=db.trips.map((t,i)=>{
+    calc(t); const p=Number(t.freight||0), ex=p-Number(t.profit||0), margin=p?Math.round(Number(t.profit||0)/p*100):0;
+    const status=t.status|| (t.payment==='так'?'Оплачено':'Очікує оплату');
+    const docs=(db.tripDocuments||[]).filter(d=>String(d.tripId)===String(t.uid) || Number(d.tripId)===i); const signed=docs.some(d=>d.type==='ТТН' && d.note==='Підписана');
+    const docStatus=docs.length===0?'Немає':(docs.length>=2?'Повний комплект':'Частково');
+    return `<tr class="${t.payment==='так'?'paid':'unpaid'}"><td>${i+1}</td><td>${esc(t.loadDate)}</td><td>${esc(t.customer)}</td><td>${esc(t.loadCity)} → ${esc(t.unloadCity)}</td><td>${Math.round(t.total||0)}</td><td>${money(t.freight)}</td><td>${money(ex)}</td><td>${money(t.profit)}</td><td>${margin}%</td><td><span class="badge">${esc(status)}</span></td><td>${esc(t.driverName||'')}</td><td>${esc(t.vehicleNumber||'')}</td><td>${esc(t.payment)}</td><td><button class="edit" onclick="tripDocuments(${i})">📎 ${docs.length?docs.length:''}</button> <button class="edit" onclick="editTrip(${i})">Редагувати</button> <button class="danger" onclick="del('trips',${i})">Видалити</button></td></tr>`;
+  }).join('');
+  layout('Рейси',`<div class="card"><div class="toolbar"><b>Контроль рейсів</b><span class="small">Документи, статус, оплата та прибутковість контролюються по кожному рейсу.</span></div>${form}</div>`+table(['№','Дата','Замовник','Маршрут','Км','Фрахт','Витрати','Прибуток','Маржа','Статус','Водій','Авто','Оплата','Документи / дії'],rows));
+}
+
+function tripDocuments(i){
+ const t=db.trips[i]; if(!t)return;
+ const docs=(db.tripDocuments||[]).filter(d=>String(d.tripId)===String(t.uid) || Number(d.tripId)===i);
+ const list=docs.length?docs.map((d)=>`<tr><td>${esc(d.type)}</td><td>${esc(d.name)}</td><td>${esc(d.date||'')}</td><td>${d.type==='ТТН'?`<select onchange="setTTNStatus(${i},'${d.id}',this.value)"><option ${d.note==='Підписана'?'selected':''}>Підписана</option><option ${d.note!=='Підписана'?'selected':''}>Очікується</option></select>`:''}</td><td><a href="${d.data}" target="_blank">Відкрити</a> <button class="danger" onclick="deleteTripDocument('${d.id}',${i})">Видалити</button></td></tr>`).join(''):'<tr><td colspan="5" class="small">Документів ще немає.</td></tr>';
+ document.getElementById('app').innerHTML=`<h2>Документи рейсу №${i+1}</h2><div class="card"><b>${esc(t.customer||'')} — ${esc(t.loadCity||'')} → ${esc(t.unloadCity||'')}</b><p class="small">Додавайте ТТН, договори-заявки, договори, акти, рахунки, фото та інші файли. Файли зберігаються разом із базою браузера.</p><div class="grid"><div><label>Тип документа</label><select id="docType"><option>ТТН</option><option>Договір-заявка</option><option>Договір</option><option>Рахунок</option><option>Акт</option><option>Фото</option><option>Інше</option></select></div><div><label>Файл</label><input id="docFile" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx"></div></div><button class="primary" onclick="uploadTripDocument(${i})">📎 Завантажити документ</button></div><div class="card"><h3>Документи</h3>${table(['Тип','Назва','Дата','Статус ТТН','Дія'],list)}<p><button class="edit" onclick="printTripCard(${i})">🖨 Друк картки рейсу</button> <button class="edit" onclick="trips()">← До рейсів</button></p></div>`;
+}
+function uploadTripDocument(i){
+ const f=document.getElementById('docFile')?.files?.[0], type=document.getElementById('docType')?.value; if(!f)return alert('Оберіть файл.');
+ if(f.size>4*1024*1024)return alert('Файл завеликий для надійного зберігання в браузері. Максимальний розмір — 4 МБ. Для великих сканів краще стиснути PDF/фото.');
+ const r=new FileReader();
+ r.onload=()=>{
+   const item={id:'doc_'+Date.now()+'_'+Math.random().toString(36).slice(2),tripId:db.trips[i]?.uid||i,type,name:f.name,date:new Date().toISOString().slice(0,10),data:r.result,note:type==='ТТН'?'Очікується':''};
+   db.tripDocuments.push(item);
+   if(save()) tripDocuments(i); else db.tripDocuments.pop();
+ };
+ r.onerror=()=>alert('Не вдалося прочитати файл.');
+ r.readAsDataURL(f);
+}
+function deleteTripDocument(id,i){db.tripDocuments=(db.tripDocuments||[]).filter(d=>d.id!==id);save();tripDocuments(i)}
+function setTTNStatus(i,id,status){const d=(db.tripDocuments||[]).find(x=>x.id===id);if(d)d.note=status;save();tripDocuments(i)}
+function printTripCard(i){const t=db.trips[i],docs=(db.tripDocuments||[]).filter(d=>String(d.tripId)===String(t.uid) || Number(d.tripId)===i);const w=window.open('','_blank');if(!w)return;w.document.write(`<html><head><title>Рейс №${i+1}</title></head><body><h2>Картка рейсу №${i+1}</h2><p><b>Замовник:</b> ${esc(t.customer)}<br><b>Маршрут:</b> ${esc(t.loadCity)} → ${esc(t.unloadCity)}<br><b>Дата:</b> ${esc(t.loadDate)} — ${esc(t.unloadDate)}<br><b>Авто:</b> ${esc(t.vehicleNumber)}<br><b>Водій:</b> ${esc(t.driverName)}<br><b>Фрахт:</b> ${money(t.freight)}<br><b>Прибуток:</b> ${money(t.profit)}<br><b>Статус:</b> ${esc(t.status||'')}<br><b>Оплата:</b> ${esc(t.payment)}</p><h3>Документи (${docs.length})</h3><ul>${docs.map(d=>`<li>${esc(d.type)} — ${esc(d.name)}${d.type==='ТТН'?' — '+esc(d.note):''}</li>`).join('')}</ul><script>window.print()<\/script></body></html>`);w.document.close()}
+
+function showLogisticInfo(){
+ const i=val('logistician'); const l=db.logisticians[Number(i)];
+ document.getElementById('logPhone').value=l?l.phone||'':'';
+ document.getElementById('logRating').value=l?l.rating||'':'';
+}
+function cityField(label,id){
+  const listId=id+'_list';
+  const list=(db.cities||[]).map(c=>`<option value="${esc(c.name)}"></option>`).join('');
+  return `<div><label>${label}</label><input id="${id}" list="${listId}" autocomplete="off" placeholder="Почніть вводити місто"><datalist id="${listId}">${list}</datalist></div>`;
+}
+
+function field(label,id,type='text'){return `<div><label>${label}</label><input id="${id}" type="${type}" ${type==='number'?'step="0.01"':''}></div>`}
+function val(id){return document.getElementById(id).value}
+function addTrip(){
+  const li=val('logistician');
+  const l=li!=='' ? (db.logisticians||[])[Number(li)] : null;
+  const driverIndex=val('driver');
+  const vehicleIndex=val('vehicle');
+  const loadCity=val('loadCity').trim().toUpperCase();
+  const unloadCity=val('unloadCity').trim().toUpperCase();
+  const t={
+    uid:'trip_'+Date.now()+'_'+Math.random().toString(36).slice(2),
+    customer:val('customer'), loadDate:val('loadDate'), unloadDate:val('unloadDate'),
+    loadCity, unloadCity, empty:Number(val('empty')||0), loaded:Number(val('loaded')||0),
+    fuelPrice:Number(val('fuelPrice')||0), freight:Number(val('freight')||0),
+    taxable:Number(val('taxable')||0), perDiem:Number(val('perDiem')||0),
+    logistics:Number(val('logistics')||0), other:Number(val('other')||0),
+    hours:Number(val('hours')||0), receiver:val('receiver'),
+    routeDistance:Number(val('routeDistance')||findDistance(loadCity,unloadCity)||0),
+    payment:val('payment'), status:val('status')||'Запланований',
+    driverId:driverIndex, vehicleId:vehicleIndex,
+    driverName:(db.drivers||[])[Number(driverIndex)]?.name||'',
+    vehicleNumber:(db.vehicles||[])[Number(vehicleIndex)]?.number||'',
+    logisticianId:li, logisticianName:l?.name||'', logisticianPhone:l?.phone||'', logisticianRating:l?.rating||''
+  };
+  calc(t); t.createdAt=new Date().toISOString(); t.documentsCount=0;
+  db.trips.push(t);
+  syncVehicleMileage();
+  if(save()) trips();
+}
+
+function logisticians(){
+ const form=`<div class="card"><h3>Додати логіста</h3><div class="grid">${field('Імʼя','lname')}${field('Номер телефону','lphone')}<div><label>Оцінка співпраці</label><select id="lrating"><option>Задоволений</option><option>Помірно</option><option>Незадоволений</option></select></div>${field('Примітка','lnote')}</div><button class="primary" onclick="addLogistician()">Зберегти</button></div>`;
+ const rows=db.logisticians.map((l,i)=>`<tr class="${l.rating==='Задоволений'?'rating-good':l.rating==='Незадоволений'?'rating-bad':'rating-mid'}"><td>${esc(l.name)}</td><td>${esc(l.phone)}</td><td>${esc(l.rating)}</td><td>${esc(l.note)}</td><td><button class="danger" onclick="del('logisticians',${i})">Видалити</button></td></tr>`).join('');
+ layout('Логісти',form+table(['Імʼя','Телефон','Оцінка','Примітка',''],rows));
+}
+function addLogistician(){db.logisticians.push({name:val('lname'),phone:val('lphone'),rating:val('lrating'),note:val('lnote')});save();logisticians();}
+const EXPENSE_TYPES=['ЗП водія','Незапланований ремонт','Планове ТО','Запчастини','Шини','Страхування','Стоянка / паркінг','Мийка','Штрафи','Податки та збори','Зв’язок / інтернет','Банківські комісії','Оренда','Адміністративні витрати','Закупівля палива','Інше'];
+function expenses(){
+ const typeOptions=EXPENSE_TYPES.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join('');
+ const vehicleOptions=(db.vehicles||[]).map((v,i)=>`<option value="${i}">${esc(v.number)} — ${esc(v.model)}</option>`).join('');
+ const driverOptions=(db.drivers||[]).map((v,i)=>`<option value="${i}">${esc(v.name)}</option>`).join('');
+ const form=`<div class="card"><h3>Додати витрату</h3><div class="grid">${field('Дата','edate','date')}<div><label>Тип витрат</label><select id="etype">${typeOptions}</select></div>${field('Сума, грн','eamount','number')}${field('Опис','edesc')}<div><label>Автомобіль</label><select id="evehicle"><option value="">— загальна витрата —</option>${vehicleOptions}</select></div><div><label>Водій</label><select id="edriver"><option value="">— не вибрано —</option>${driverOptions}</select></div></div><p><label>Закупівля палива</label><select id="efuel"><option value="ні">ні</option><option value="так">так</option></select></p><p class="small">Витрату можна прив’язати до конкретного автомобіля та водія. Паливо залишається окремою статтею для «Фактичних коштів».</p><button class="primary" onclick="addExpense()">Зберегти</button></div>`;
+ const rows=db.expenses.map((e,i)=>{const v=(db.vehicles||[])[Number(e.vehicleId)],d=(db.drivers||[])[Number(e.driverId)];return `<tr><td>${i+1}</td><td>${esc(e.date)}</td><td>${esc(e.type)}</td><td>${money(e.amount)}</td><td>${esc(e.desc)}</td><td>${esc(v?.number||'Загальна')}</td><td>${esc(d?.name||'')}</td><td>${esc(e.fuel)}</td><td><button class="danger" onclick="del('expenses',${i})">Видалити</button></td></tr>`}).join('');
+ layout('Витрати',form+table(['№','Дата','Тип','Сума','Опис','Авто','Водій','Паливо',''],rows));
+}
+function addExpense(){
+ const type=val('etype'),fuel=val('efuel'),vehicleId=val('evehicle'),driverId=val('edriver');
+ db.expenses.push({date:val('edate'),type,amount:Number(val('eamount')||0),desc:val('edesc'),fuel,vehicleId,driverId});save();expenses();
+}
+function funds(){
+ const received=db.trips.filter(t=>t.payment==='так').reduce((s,t)=>s+Number(t.freight||0),0);
+ const tripExp=db.trips.reduce((s,t)=>s+Number(t.perDiem||0)+Number(t.logistics||0)+Number(t.other||0)+Number(t.tax||0),0);
+ const nonFuel=db.expenses.filter(e=>e.fuel==='ні').reduce((s,e)=>s+Number(e.amount||0),0);
+ const fuel=db.expenses.filter(e=>e.fuel==='так').reduce((s,e)=>s+Number(e.amount||0),0);
+ const maintenance=(db.maintenance||[]).reduce((s,m)=>s+Number(m.total||0),0);
+ const current=received-tripExp-nonFuel-fuel-maintenance;
+ layout('Фактичні кошти',`<div class="kpis"><div class="kpi">Отримані кошти<b>${money(received)}</b></div><div class="kpi">Витрати без палива<b>${money(tripExp+nonFuel)}</b></div><div class="kpi">Закупівля палива<b>${money(fuel)}</b></div><div class="kpi">ТО / ремонти<b>${money(maintenance)}</b></div><div class="kpi">Поточна наявність<b>${money(current)}</b></div></div><div class="card"><b>Правило:</b> отримані кошти — тільки оплачені рейси («так»). Паливо вводиться окремо у «Витрати». ТО та ремонти з «Автомобілів» автоматично віднімаються з фактичної наявності.</div>`);
+}
+
+function customers(){
+  const rows=(db.customers||[]).map((o,i)=>{
+    const ts=db.trips.filter(t=>t.customer===o.name), debt=ts.filter(t=>t.payment!=='так').reduce((s,t)=>s+Number(t.freight||0),0);
+    return `<tr><td>${esc(o.name)}</td><td>${esc(o.phone)}</td><td>${money(debt)}</td><td>${esc(o.notes)}</td><td><button class="danger" onclick="del('customers',${i})">Видалити</button></td></tr>`;
+  }).join('');
+  const form=`<div class="card"><h3>Додати замовника</h3><div class="grid">${field('Назва','cname')}${field('Телефон','cphone')}${field('Примітки','cnotes')}</div><button class="primary" onclick="db.customers.push({name:val('cname'),phone:val('cphone'),notes:val('cnotes')});save();customers()">Зберегти</button></div>`;
+  layout('Замовники',form+table(['Замовник','Телефон','Борг','Примітки',''],rows));
+}
+function drivers(){
+  const rows=(db.drivers||[]).map((d,i)=>{
+    const ts=db.trips.filter(t=>String(t.driverId)===String(i));
+    const km=ts.reduce((s,t)=>s+Number(t.total||0),0), profit=ts.reduce((s,t)=>s+Number(t.profit||0),0);
+    return `<tr><td>${esc(d.name)}</td><td>${esc(d.phone)}</td><td>${Math.round(km)}</td><td>${money(profit)}</td><td>${esc(d.notes)}</td><td><button class="danger" onclick="del('drivers',${i})">Видалити</button></td></tr>`;
+  }).join('');
+  const form=`<div class="card"><h3>Додати водія</h3><div class="grid">${field('ПІБ','dname')}${field('Телефон','dphone')}${field('Примітки','dnotes')}</div><button class="primary" onclick="db.drivers.push({name:val('dname'),phone:val('dphone'),notes:val('dnotes')});save();drivers()">Зберегти</button></div>`;
+  layout('Водії',form+table(['ПІБ','Телефон','Км','Прибуток','Примітки',''],rows));
+}
+function vehicles(){
+ syncVehicleMileage();
+ const rows=(db.vehicles||[]).map((v,i)=>{
+  const ts=db.trips.filter(t=>String(t.vehicleId)===String(i));
+  const km=ts.reduce((s,t)=>s+Number(t.total||0),0);
+  const currentOdo=Number(v.currentOdo||Number(v.baseOdo||0)+km||0);
+  const lastOil=Number(v.lastOilKm||0),interval=Number(v.oilInterval||10000);
+  const since=lastOil>0?Math.max(0,currentOdo-lastOil):0,remaining=lastOil>0?interval-since:interval;
+  const cls=remaining<=0?'oil-danger':remaining<=1000?'oil-warn':'oil-ok';
+  const status=lastOil===0?'Потрібно встановити старт':remaining<=0?'ЗАМІНА ПОТРІБНА':`Ще ${Math.round(remaining)} км`;
+  const works=(db.maintenance||[]).filter(m=>String(m.vehicleId)===String(i));
+  const maint=works.reduce((s,m)=>s+Number(m.total||0),0);
+  const ext=(db.expenses||[]).filter(e=>String(e.vehicleId)===String(i)).reduce((s,e)=>s+Number(e.amount||0),0);
+  const revenue=ts.reduce((s,t)=>s+Number(t.freight||0),0);
+  const tripCosts=ts.reduce((s,t)=>s+Number(t.perDiem||0)+Number(t.logistics||0)+Number(t.other||0)+Number(t.tax||0)+Number(t.fuelCost||0),0);
+  const result=revenue-tripCosts-ext-maint;
+  const costKm=km?(tripCosts+ext+maint)/km:0;
+  return `<tr class="${cls}"><td>${esc(v.number)}</td><td>${esc(v.model)}</td><td>${esc(v.payload)}</td><td>${Math.round(currentOdo)}</td><td>${Math.round(lastOil)}</td><td>${Math.round(interval)}</td><td>${Math.round(since)}</td><td class="oil-status">${status}</td><td>${works.length}</td><td>${money(maint)}</td><td>${money(result)}</td><td>${money(costKm)}</td><td><button class="small-btn success" onclick="oilReset(${i})">🔧 Замінив мастило</button> <button class="small-btn" onclick="oilSettings(${i})">Налаштування</button> <button class="small-btn" onclick="vehicleHistory(${i})">📋 Історія</button> <button class="danger" onclick="del('vehicles',${i})">Видалити</button></td></tr>`;
+ }).join('');
+ const form=`<div class="card"><h3>Додати автомобіль</h3><div class="grid">${field('Держномер','vnumber')}${field('Марка/модель','vmodel')}${field('Вантажопідйомність, т','vpayload','number')}${field('Поточний пробіг, км','vodometer','number')}${field('Інтервал заміни мастила, км','voilinterval','number')}${field('Примітка','vnote')}</div><p class="small">Після додавання кілометраж накопичується автоматично з рейсів цього автомобіля.</p><button class="primary" onclick="addVehicle()">Зберегти автомобіль</button></div>`;
+ const workForm=`<div class="card"><h3>🔧 Додати технічну роботу / ремонт</h3><div class="grid"><div><label>Автомобіль</label><select id="mvehicle"><option value="">— виберіть —</option>${(db.vehicles||[]).map((v,i)=>`<option value="${i}">${esc(v.number)} — ${esc(v.model)}</option>`).join('')}</select></div>${field('Дата','mdate','date')}${field('Кілометраж','mkm','number')}${field('Вид роботи','mtype')}${field('Що зроблено','mdesc')}${field('Запчастини, грн','mparts','number')}${field('Робота, грн','mlabor','number')}${field('СТО / майстер','mservice')}${field('Гарантія / примітка','mnote')}</div><button class="primary" onclick="addMaintenance()">Зберегти ТО / ремонт</button></div>`;
+ const maintenanceRows=(db.maintenance||[]).slice().sort((a,b)=>String(b.date).localeCompare(String(a.date))).map((m,i)=>{const v=db.vehicles[Number(m.vehicleId)]||{};return `<tr><td>${esc(m.date)}</td><td>${esc(v.number||'')}</td><td>${Math.round(Number(m.km||0))}</td><td>${esc(m.type)}</td><td>${esc(m.desc)}</td><td>${money(m.parts)}</td><td>${money(m.labor)}</td><td>${money(m.total)}</td><td>${esc(m.service)}</td><td>${esc(m.note)}</td><td><button class="danger" onclick="deleteMaintenance(${i})">Видалити</button></td></tr>`}).join('');
+ const financeRows=(db.vehicles||[]).map((v,i)=>{const ts=db.trips.filter(t=>String(t.vehicleId)===String(i));const km=ts.reduce((s,t)=>s+Number(t.total||0),0);const revenue=ts.reduce((s,t)=>s+Number(t.freight||0),0);const tripCosts=ts.reduce((s,t)=>s+Number(t.perDiem||0)+Number(t.logistics||0)+Number(t.other||0)+Number(t.tax||0)+Number(t.fuelCost||0),0);const ext=(db.expenses||[]).filter(e=>String(e.vehicleId)===String(i)).reduce((s,e)=>s+Number(e.amount||0),0);const maint=(db.maintenance||[]).filter(m=>String(m.vehicleId)===String(i)).reduce((s,m)=>s+Number(m.total||0),0);const totalCost=tripCosts+ext+maint;return `<tr><td>${esc(v.number)}</td><td>${ts.length}</td><td>${Math.round(km)}</td><td>${money(revenue)}</td><td>${money(tripCosts)}</td><td>${money(ext)}</td><td>${money(maint)}</td><td><b>${money(revenue-totalCost)}</b></td><td>${money(km?totalCost/km:0)}</td></tr>`}).join('');
+ layout('Автомобілі',form+workForm+`<div class="card"><h3>Контроль мастила та технічний стан</h3>${table(['Держномер','Модель','Тонн','Поточний пробіг','Остання заміна','Інтервал','Після заміни','Статус','Робіт','ТО/ремонт','Фін. результат','Собівартість/км','Дії'],rows||'<tr><td colspan="13">Автомобілів немає.</td></tr>')}</div><div class="card"><h3>📊 Фінансовий результат по автомобілях</h3><p class="small">Фрахт мінус витрати рейсів, прив’язані витрати, ТО та ремонти.</p>${table(['Авто','Рейсів','Км','Фрахт','Витрати рейсів','Інші витрати','ТО/ремонт','Фін. результат','Собівартість/км'],financeRows||'<tr><td colspan="9">Даних немає.</td></tr>')}</div><div class="card"><h3>Журнал ТО та ремонтів</h3>${table(['Дата','Авто','Км','Вид роботи','Що зроблено','Запчастини','Робота','Разом','СТО / майстер','Примітка',''],maintenanceRows||'<tr><td colspan="11">Записів ще немає.</td></tr>')}</div>`);
+}
+function addVehicle(){
+ const number=val('vnumber').trim(); if(!number){alert('Введіть держномер.');return;}
+ const base=Number(val('vodometer')||0),interval=Number(val('voilinterval')||10000);
+ db.vehicles.push({number,model:val('vmodel'),payload:Number(val('vpayload')||0),baseOdo:base,currentOdo:base,lastOilKm:base,oilInterval:interval,note:val('vnote')});
+ save();vehicles();
+}
+function oilReset(i){
+ const v=db.vehicles[i]; if(!v)return; syncVehicleMileage();
+ const km=Number(v.currentOdo||0);
+ v.lastOilKm=km;
+ db.maintenance.push({vehicleId:String(i),date:new Date().toISOString().slice(0,10),km,type:'Заміна мастила',desc:'Планова заміна мастила',parts:0,labor:0,total:0,service:'',note:'Лічильник заміни мастила скинуто'});
+ save();vehicles();
+}
+function oilSettings(i){
+ const v=db.vehicles[i]; if(!v)return;
+ const km=prompt('Встановити поточний пробіг, км:',String(Math.round(v.currentOdo||0))); if(km===null)return;
+ const interval=prompt('Інтервал заміни мастила, км:',String(Number(v.oilInterval||10000))); if(interval===null)return;
+ v.currentOdo=Number(km)||0; v.baseOdo=Number(v.baseOdo||0); v.oilInterval=Number(interval)||10000;
+ if(Number(v.lastOilKm||0)===0)v.lastOilKm=v.currentOdo;
+ save();vehicles();
+}
+function addMaintenance(){
+  const vi=val('mvehicle'); if(vi===''){alert('Виберіть автомобіль.');return;}
+  const parts=Number(val('mparts')||0), labor=Number(val('mlabor')||0);
+  db.maintenance.push({vehicleId:vi,date:val('mdate')||new Date().toISOString().slice(0,10),km:Number(val('mkm')||0),type:val('mtype'),desc:val('mdesc'),parts,labor,total:parts+labor,service:val('mservice'),note:val('mnote')});
+  save(); vehicles();
+}
+function deleteMaintenance(sortedIndex){
+  const list=(db.maintenance||[]).slice().sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+  const item=list[sortedIndex]; if(!item)return;
+  const real=(db.maintenance||[]).indexOf(item);
+  if(confirm('Видалити запис про роботу?')){db.maintenance.splice(real,1);save();vehicles();}
+}
+function vehicleHistory(i){
+  const v=db.vehicles[i]; if(!v)return;
+  const works=(db.maintenance||[]).filter(m=>String(m.vehicleId)===String(i)).sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+  const total=works.reduce((s,m)=>s+Number(m.total||0),0);
+  const rows=works.map((m,j)=>`<tr><td>${j+1}</td><td>${esc(m.date)}</td><td>${Math.round(Number(m.km||0))}</td><td>${esc(m.type)}</td><td>${esc(m.desc)}</td><td>${money(m.parts)}</td><td>${money(m.labor)}</td><td>${money(m.total)}</td><td>${esc(m.service)}</td><td>${esc(m.note)}</td></tr>`).join('');
+  layout(`Історія — ${esc(v.number)}`,`<div class="metric-grid"><div class="metric"><span>Поточний пробіг</span><b>${Math.round(v.currentOdo||0)} км</b></div><div class="metric"><span>Кількість робіт</span><b>${works.length}</b></div><div class="metric"><span>Витрати на ТО/ремонт</span><b>${money(total)} грн</b></div></div><div class="card"><button class="edit" onclick="vehicles()">← Назад до автомобілів</button></div><div class="card">${table(['№','Дата','Км','Вид роботи','Що зроблено','Запчастини','Робота','Разом','СТО / майстер','Примітка'],rows||'<tr><td colspan="10">Історії робіт немає.</td></tr>')}</div>`);
+}
+function debtors(){
+  const map={};
+  db.trips.forEach(t=>{
+    const k=t.customer||'Без замовника';
+    if(!map[k]) map[k]={freight:0,paid:0};
+    map[k].freight+=Number(t.freight||0);
+    if(t.payment==='так') map[k].paid+=Number(t.freight||0);
+  });
+  const rows=Object.entries(map).filter(([k,v])=>v.freight-v.paid>0).map(([k,v],i)=>{
+    const debt=v.freight-v.paid;
+    return `<tr><td>${i+1}</td><td>${esc(k)}</td><td>${money(v.freight)}</td><td>${money(v.paid)}</td><td><b>${money(debt)}</b></td><td><span class="badge badge-red">Борг</span></td></tr>`;
+  }).join('');
+  const total=Object.values(map).reduce((s,v)=>s+v.freight-v.paid,0);
+  layout('Дебіторка',`<div class="metric-grid"><div class="metric"><span>Загальний борг</span><b>${money(total)}</b></div><div class="metric"><span>Замовників з боргом</span><b>${Object.values(map).filter(v=>v.freight-v.paid>0).length}</b></div><div class="metric"><span>Несплачених рейсів</span><b>${db.trips.filter(t=>t.payment!=='так').length}</b></div></div><div class="card"><h3>Борги замовників</h3>${table(['№','Замовник','Фрахт','Оплачено','Борг','Статус'],rows||'<tr><td colspan="6">Боргів немає.</td></tr>')}</div>`);
+}
+
+function simple(title,key,fields,labels){
+ const form=`<div class="card"><h3>Додати</h3><div class="grid">${fields.map((f,i)=>field(labels[i],f)).join('')}</div><button class="primary" onclick="addSimple('${key}',${JSON.stringify(fields)})">Зберегти</button></div>`;
+ const rows=db[key].map((o,i)=>`<tr>${fields.map(f=>`<td>${esc(o[f])}</td>`).join('')}<td><button class="danger" onclick="del('${key}',${i})">Видалити</button></td></tr>`).join('');
+ layout(title,form+table([...labels,''],rows));
+}
+function addSimple(key,fields){let o={};fields.forEach(f=>o[f]=val(f));db[key].push(o);save();page(key);}
+
+function cities(){
+  db.cities=(db.cities||[]).map(c=>({
+    name:String(c.name||'').trim().toUpperCase(),
+    oblast:String(c.oblast||'').trim(),
+    rayon:String(c.rayon||c.district||'').trim(),
+    type:String(c.type||'Місто').trim()||'Місто'
+  })).filter(c=>c.name);
+  const seen=new Set();
+  db.cities=db.cities.filter(c=>{const k=c.name+'|'+c.oblast.toUpperCase()+'|'+c.rayon.toUpperCase();if(seen.has(k))return false;seen.add(k);return true;});
+  db.cities.sort((a,b)=>a.name.localeCompare(b.name,'uk'));
+
+  const q=(document.getElementById('citySearch')?.value||'').trim().toUpperCase();
+  const ob=(document.getElementById('cityFilterOblast')?.value||'').trim().toUpperCase();
+  const ty=(document.getElementById('cityFilterType')?.value||'').trim();
+  const filtered=db.cities.filter(c=>(!q||c.name.includes(q)||c.rayon.toUpperCase().includes(q))&&(!ob||c.oblast.toUpperCase()===ob)&&(!ty||c.type===ty));
+  const rows=filtered.map(c=>{const i=db.cities.indexOf(c);return `<tr>
+    <td>${i+1}</td>
+    <td><input value="${esc(c.name)}" onchange="updateCity(${i},'name',this.value)"></td>
+    <td><input value="${esc(c.oblast)}" placeholder="Область" onchange="updateCity(${i},'oblast',this.value)"></td>
+    <td><input value="${esc(c.rayon)}" placeholder="Район" onchange="updateCity(${i},'rayon',this.value)"></td>
+    <td><select onchange="updateCity(${i},'type',this.value)"><option ${c.type==='Місто'?'selected':''}>Місто</option><option ${c.type==='Селище'?'selected':''}>Селище</option><option ${c.type==='Село'?'selected':''}>Село</option></select></td>
+    <td><button class="danger" onclick="deleteCity(${i})">Видалити</button></td>
+  </tr>`}).join('');
+  const oblasts=[...new Set(db.cities.map(c=>c.oblast).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'uk')).map(x=>`<option ${x.toUpperCase()===ob?'selected':''}>${esc(x)}</option>`).join('');
+  layout('Міста',`
+    <div class="card">
+      <h3>📍 Довідник населених пунктів</h3>
+      <p class="small">Єдиний довідник для «Рейсів» і «Відстаней». Дані зберігаються локально в базі ProMax.</p>
+      <div class="grid">
+        <div><label>Пошук</label><input id="citySearch" value="${esc(q)}" placeholder="Харків, Дніпро..." oninput="cities()"></div>
+        <div><label>Область</label><select id="cityFilterOblast" onchange="cities()"><option value="">Усі області</option>${oblasts}</select></div>
+        <div><label>Тип</label><select id="cityFilterType" onchange="cities()"><option value="">Усі</option><option ${ty==='Місто'?'selected':''}>Місто</option><option ${ty==='Селище'?'selected':''}>Селище</option><option ${ty==='Село'?'selected':''}>Село</option></select></div>
+        <div><label>Нова назва</label><input id="cityName" placeholder="Назва населеного пункту"></div>
+        <div><label>Область</label><input id="cityOblast" placeholder="Наприклад, Харківська"></div>
+        <div><label>Район</label><input id="cityRayon" placeholder="Район"></div>
+        <div><label>Тип</label><select id="cityType"><option>Місто</option><option>Селище</option><option>Село</option></select></div>
+      </div>
+      <p><button class="primary" onclick="addCity()">➕ Додати</button> <button class="edit" onclick="clearCityFilters()">Очистити фільтри</button> <button class="edit" onclick="sortCities()">А–Я</button></p>
+      <div class="small">Показано: ${filtered.length} із ${db.cities.length}</div>
+    </div>
+    <div class="card">${table(['№','Населений пункт','Область','Район','Тип',''],rows||'<tr><td colspan="6">Нічого не знайдено.</td></tr>')}</div>`);
+}
+function addCity(){
+  const name=(document.getElementById('cityName')?.value||'').trim().toUpperCase();
+  const oblast=(document.getElementById('cityOblast')?.value||'').trim();
+  const rayon=(document.getElementById('cityRayon')?.value||'').trim();
+  const type=document.getElementById('cityType')?.value||'Місто';
+  if(!name){alert('Введіть назву населеного пункту.');return;}
+  if(db.cities.some(c=>String(c.name).toUpperCase()===name && String(c.oblast).toUpperCase()===oblast.toUpperCase())){alert('Такий населений пункт уже є у довіднику.');return;}
+  db.cities.push({name,oblast,rayon,type}); save(); cities();
+}
+function updateCity(i,field,value){
+  value=String(value??'').trim();
+  if(field==='name') value=value.toUpperCase();
+  if(field==='name'&&!value){alert('Назва не може бути порожньою.');cities();return;}
+  if(field==='name'&&db.cities.some((c,j)=>j!==i&&String(c.name).toUpperCase()===value&&String(c.oblast).toUpperCase()===String(db.cities[i].oblast).toUpperCase())){alert('Такий населений пункт уже є.');cities();return;}
+  db.cities[i][field]=value; save();
+}
+function deleteCity(i){const name=db.cities[i]?.name||'';if(confirm('Видалити «'+name+'»?')){db.cities.splice(i,1);save();cities();}}
+function sortCities(){db.cities.sort((a,b)=>a.name.localeCompare(b.name,'uk'));save();cities();}
+function clearCityFilters(){['citySearch','cityFilterOblast','cityFilterType'].forEach(id=>{const e=document.getElementById(id);if(e)e.value=''});cities();}
+
+function distances(){
+ const form=`<div class="card"><h3>Додати маршрут</h3><div class="grid">${field('Місто завантаження','from')}${field('Місто розвантаження','to')}${field('Відстань, км','km','number')}</div><button class="primary" onclick="addDistance()">Зберегти</button></div>`;
+ const rows=db.distances.map((d,i)=>`<tr><td>${esc(d.from)}</td><td>${esc(d.to)}</td><td>${esc(d.km)}</td><td><button class="danger" onclick="del('distances',${i})">Видалити</button></td></tr>`).join('');
+ layout('Відстані',form+table(['Завантаження','Розвантаження','Км',''],rows));
+}
+function addDistance(){db.distances.push({from:val('from'),to:val('to'),km:Number(val('km')||0)});save();distances();}
+function reports(){
+  const form=`<div class="report-controls">
+    <h3>Професійний аналітичний звіт</h3>
+    <div class="grid">
+      <div><label>Тип періоду</label><select id="reportType" onchange="reportTypeChanged()">
+        <option value="month">Місяць</option><option value="week">Тиждень</option><option value="decade">Декада</option><option value="day">День</option><option value="custom">Довільний період</option>
+      </select></div>
+      <div id="periodInput"><label>Дата / місяць</label><input id="reportDate" type="month"></div>
+      <div id="customStart" style="display:none"><label>Початок</label><input id="reportStart" type="date"></div>
+      <div id="customEnd" style="display:none"><label>Кінець</label><input id="reportEnd" type="date"></div>
+    </div>
+    <p><button class="primary" onclick="buildReport()">Сформувати звіт</button> <button class="edit" onclick="window.print()">Друк / PDF</button></p>
+    <div class="small">Усі показники округлено до цілих. Рейси відбираються за датою завантаження.</div>
+  </div><div id="reportResult"></div>`;
+  layout('Звіти',form); reportTypeChanged();
+  const now=new Date(), inp=document.getElementById('reportDate'); if(inp) inp.value=now.toISOString().slice(0,7);
+}
+
+function reportTypeChanged(){
+ const type=document.getElementById('reportType').value;
+ const pi=document.getElementById('periodInput'), cs=document.getElementById('customStart'), ce=document.getElementById('customEnd');
+ if(type==='custom'){pi.style.display='none';cs.style.display='block';ce.style.display='block';}
+ else{
+   pi.style.display='block';cs.style.display='none';ce.style.display='none';
+   const inp=document.getElementById('reportDate');
+   inp.type=(type==='month')?'month':'date';
+ }
+}
+function getReportRange(){
+ const type=document.getElementById('reportType').value;
+ if(type==='custom'){
+   return [document.getElementById('reportStart').value,document.getElementById('reportEnd').value];
+ }
+ const v=document.getElementById('reportDate').value;
+ if(!v) return [null,null];
+ if(type==='month') return [v+'-01', new Date(new Date(v+'-01T00:00:00').getFullYear(),new Date(v+'-01T00:00:00').getMonth()+1,0).toISOString().slice(0,10)];
+ const d=new Date(v+'T00:00:00');
+ if(type==='day') return [v,v];
+ if(type==='week'){
+   const day=d.getDay()||7; const s=new Date(d); s.setDate(d.getDate()-day+1);
+   const e=new Date(s); e.setDate(s.getDate()+6);
+   return [s.toISOString().slice(0,10),e.toISOString().slice(0,10)];
+ }
+ if(type==='decade'){
+   const day=d.getDate(); let a,b;
+   if(day<=10){a=1;b=10}else if(day<=20){a=11;b=20}else{a=21;b=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();}
+   const s=new Date(d.getFullYear(),d.getMonth(),a), e=new Date(d.getFullYear(),d.getMonth(),b);
+   return [s.toISOString().slice(0,10),e.toISOString().slice(0,10)];
+ }
+ return [null,null];
+}
+function inRange(date,start,end){
+ if(!date)return false;
+ const x=String(date).slice(0,10);
+ return x>=start && x<=end;
+}
+function buildReport(){
+  const [start,end]=getReportRange();
+  if(!start||!end){alert('Вибери звітний період.');return;}
+  if(start>end){alert('Початок періоду не може бути пізніше кінця.');return;}
+  const trips=db.trips.filter(t=>inRange(t.loadDate,start,end)); const expenses=db.expenses.filter(e=>inRange(e.date,start,end)); trips.forEach(calc);
+
+  const freight=trips.reduce((s,t)=>s+Number(t.freight||0),0);
+  const paid=trips.filter(t=>t.payment==='так').reduce((s,t)=>s+Number(t.freight||0),0);
+  const fuelCost=trips.reduce((s,t)=>s+Number(t.fuelCost||0),0), tax=trips.reduce((s,t)=>s+Number(t.tax||0),0);
+  const perDiem=trips.reduce((s,t)=>s+Number(t.perDiem||0),0), logistics=trips.reduce((s,t)=>s+Number(t.logistics||0),0);
+  const other=trips.reduce((s,t)=>s+Number(t.other||0),0);
+  const externalNonFuel=expenses.filter(e=>e.fuel==='ні').reduce((s,e)=>s+Number(e.amount||0),0);
+  const fuelPurchases=expenses.filter(e=>e.fuel==='так').reduce((s,e)=>s+Number(e.amount||0),0);
+  const allExpenses=perDiem+logistics+other+tax+fuelCost+externalNonFuel+fuelPurchases;
+  const profit=trips.reduce((s,t)=>s+Number(t.profit||0),0)-externalNonFuel-fuelPurchases;
+  const currentFunds=paid-perDiem-logistics-other-tax-externalNonFuel-fuelPurchases;
+  const km=trips.reduce((s,t)=>s+Number(t.total||0),0), liters=trips.reduce((s,t)=>s+Number(t.fuel||0),0);
+  const profitKm=km?profit/km:0, costKm=km?allExpenses/km:0, margin=freight?profit/freight*100:0;
+
+  const expenseParts=[['Паливо за рейсами',fuelCost],['Закупівля палива',fuelPurchases],['Добові',perDiem],['Логістика',logistics],['Інші витрати',other+externalNonFuel],['Податок',tax]].filter(x=>x[1]>0);
+  const maxExpense=Math.max(...expenseParts.map(x=>x[1]),1);
+  const bars=expenseParts.map(x=>`<div class="bar-wrap"><div class="bar-value">${money(x[1])}</div><div class="bar" style="height:${Math.max(2,Math.round(x[1]/maxExpense*190))}px"></div><div class="bar-label" title="${esc(x[0])}">${esc(x[0])}</div></div>`).join('');
+  const totalPie=expenseParts.reduce((s,x)=>s+x[1],0)||1; let angle=0;
+  const pieColors=['#173f5f','#4c78a8','#72a0c4','#b8c9d9','#91a7bc','#d0dbe5'];
+  const stops=expenseParts.map((x,i)=>{const next=angle+x[1]/totalPie*360;const p=`${pieColors[i%pieColors.length]} ${angle}deg ${next}deg`;angle=next;return p;}).join(',');
+  const legend=expenseParts.map((x,i)=>`<div><i style="background:${pieColors[i%pieColors.length]}"></i>${esc(x[0])}: <b>${money(x[1])}</b></div>`).join('');
+  const tripBars=trips.slice(0,20).map((t,i)=>`<div class="bar-wrap"><div class="bar-value">${money(t.profit)}</div><div class="bar" style="height:${Math.max(2,Math.round(Math.max(0,Number(t.profit||0))/Math.max(...trips.map(q=>Math.max(0,Number(q.profit||0)),1))*190))}px"></div><div class="bar-label">№${i+1}</div></div>`).join('');
+
+  const rows=trips.map((t,i)=>`<tr class="${t.payment==='так'?'paid':'unpaid'}"><td>${i+1}</td><td>${esc(t.loadDate)}</td><td>${esc(t.customer)}</td><td>${esc(t.loadCity)} → ${esc(t.unloadCity)}</td><td>${Math.round(t.total||0)}</td><td>${money(t.freight)}</td><td>${money(t.fuelCost)}</td><td>${money(t.tax)}</td><td>${money(t.perDiem)}</td><td>${money(t.logistics)}</td><td>${money(t.other)}</td><td>${money(t.profit)}</td><td>${esc(t.status||'')}</td></tr>`).join('');
+  const erows=expenses.map((e,i)=>`<tr><td>${i+1}</td><td>${esc(e.date)}</td><td>${esc(e.type)}</td><td>${money(e.amount)}</td><td>${esc(e.desc)}</td><td>${esc(e.fuel)}</td></tr>`).join('');
+
+  document.getElementById('reportResult').innerHTML=`
+  <div class="report-kpis">
+    <div class="report-kpi"><span>Рейсів</span><strong>${trips.length}</strong></div>
+    <div class="report-kpi"><span>Фрахт</span><strong>${money(freight)}</strong></div>
+    <div class="report-kpi"><span>Отримано</span><strong>${money(paid)}</strong></div>
+    <div class="report-kpi"><span>Чистий результат</span><strong>${money(profit)}</strong></div>
+  </div>
+  <div class="metric-grid">
+    <div class="metric"><span>Кілометраж</span><b>${Math.round(km)} км</b></div>
+    <div class="metric"><span>Паливо</span><b>${Math.round(liters)} л</b></div>
+    <div class="metric"><span>Прибуток / км</span><b>${money(profitKm)} грн</b></div>
+    <div class="metric"><span>Собівартість / км</span><b>${money(costKm)} грн</b></div>
+    <div class="metric"><span>Маржа</span><b>${Math.round(margin)}%</b></div>
+    <div class="metric"><span>Поточні кошти</span><b>${money(currentFunds)} грн</b></div>
+  </div>
+  <div class="card"><h3>Звітний період: ${esc(start)} — ${esc(end)}</h3></div>
+  <div class="charts-grid">
+    <div class="chart-card"><div class="chart-title">Структура витрат</div><div class="chart-sub">За вибраний період</div><div class="pie-wrap"><div class="pie" style="background:conic-gradient(${stops||'#dbe2e8 0 360deg'})"></div><div class="legend">${legend||'<div>Витрат немає</div>'}</div></div></div>
+    <div class="chart-card"><div class="chart-title">Витрати за категоріями</div><div class="chart-sub">Суми, грн</div><div class="bars">${bars||'<div class="small">Немає витрат.</div>'}</div></div>
+    <div class="chart-card"><div class="chart-title">Прибуток по рейсах</div><div class="chart-sub">Перші 20 рейсів періоду</div><div class="bars">${tripBars||'<div class="small">Рейсів немає.</div>'}</div></div>
+    <div class="chart-card"><div class="chart-title">Фінансовий підсумок</div>${table(['Показник','Сума'],[['Фрахт',money(freight)],['Отримані кошти',money(paid)],['Усі витрати',money(allExpenses)],['Поточна наявність',money(currentFunds)],['Чистий результат',money(profit)]])}</div>
+  </div>
+  <div class="card"><h3>Рейси за період</h3>${table(['№','Дата','Замовник','Маршрут','Км','Фрахт','Паливо','Податок','Добові','Логістика','Інші','Прибуток','Статус'],rows||'<tr><td colspan="13">Рейсів немає.</td></tr>')}</div>
+  <div class="card"><h3>Витрати за період</h3>${table(['№','Дата','Тип','Сума','Опис','Закупівля палива'],erows||'<tr><td colspan="6">Витрат немає.</td></tr>')}</div>`;
+}
+
+function backup(){layout('Резервна копія',`<div class="card"><p>Збереження відбувається автоматично.</p><button class="primary" onclick="exportDB()">Експорт бази</button> <button class="primary" onclick="importDB()">Імпорт бази</button> <button class="edit" onclick="changeAccessPassword()">🔑 Змінити пароль</button> <button class="edit" onclick="cloudSettings()">☁️ Хмарна синхронізація</button><input type="file" id="imp" accept=".json" style="display:none" onchange="doImport(event)"><p class="small">Експортуй JSON перед очищенням браузера або перенесенням на інший комп'ютер.</p></div>`)}
+function exportDB(){db.version='ProMax 3.0';save();const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(db,null,2)],{type:'application/json'}));a.download='ProMax_backup.json';a.click();}
+function importDB(){document.getElementById('imp').click()}
+function doImport(e){const r=new FileReader();r.onload=()=>{try{db=JSON.parse(r.result);save();page('dashboard')}catch{alert('Файл бази пошкоджений')}};r.readAsText(e.target.files[0])}
+function editTrip(i){
+ const t=db.trips[i];
+ const logistics=db.logisticians||[];
+ const options=logistics.map((l,j)=>`<option value="${j}" ${String(t.logisticianId)===String(j)?'selected':''}>${esc(l.name)}</option>`).join('');
+ document.getElementById('reportResult')?.remove();
+ const htmlForm=`<div class="card"><h3>Редагування рейсу №${i+1}</h3>
+ <div class="grid">
+ ${field('Замовник','e_customer')}${field('Дата завантаження','e_loadDate','date')}${field('Дата розвантаження','e_unloadDate','date')}
+ ${cityField('Місце завантаження','e_loadCity')}${cityField('Місце розвантаження','e_unloadCity')}
+ ${field('Порожній пробіг, км','e_empty','number')}${field('Завантажений пробіг, км','e_loaded','number')}
+ ${field('Ціна палива, грн/л','e_fuelPrice','number')}${field('Фрахт, грн','e_freight','number')}
+ ${field('Сума під оподаткування','e_taxable','number')}${field('Добові','e_perDiem','number')}
+ ${field('Логістика','e_logistics','number')}${field('Інші витрати','e_other','number')}
+ ${field('Години в дорозі','e_hours','number')}${field('Отримувач','e_receiver')}${field('Відстань маршруту, км','e_routeDistance','number')}
+ <div><label>Водій</label><select id="e_driver"><option value="">— не вибрано —</option>${(db.drivers||[]).map((d,j)=>`<option value="${j}" ${String(t.driverId)===String(j)?'selected':''}>${esc(d.name)}</option>`).join('')}</select></div><div><label>Автомобіль</label><select id="e_vehicle"><option value="">— не вибрано —</option>${(db.vehicles||[]).map((v,j)=>`<option value="${j}" ${String(t.vehicleId)===String(j)?'selected':''}>${esc(v.number)} — ${esc(v.model)}</option>`).join('')}</select></div><div><label>Логіст</label><select id="e_logistician">${'<option value="">— не вибрано —</option>'+options}</select></div>
+ </div>
+ <p><label>Оплата рейсу</label><select id="e_payment"><option ${t.payment==='ні'?'selected':''}>ні</option><option ${t.payment==='так'?'selected':''}>так</option></select> <label style="display:inline-block;margin-left:14px">Статус</label><select id="e_status" style="width:auto"><option>Запланований</option><option>Завантаження</option><option>В дорозі</option><option>Розвантажено</option><option>Очікує оплату</option><option>Оплачено</option></select></p>
+ <button class="primary" onclick="saveEditedTrip(${i})">Зберегти зміни</button>
+ <button class="edit" onclick="trips()">Скасувати</button></div>`;
+ document.getElementById('app').innerHTML=`<h2>Рейси</h2>${htmlForm}`;
+ const set=(id,v)=>{const el=document.getElementById(id); if(el)el.value=v??''};
+ set('e_customer',t.customer);set('e_loadDate',t.loadDate);set('e_unloadDate',t.unloadDate);set('e_loadCity',t.loadCity);set('e_unloadCity',t.unloadCity);
+ set('e_empty',t.empty);set('e_loaded',t.loaded);set('e_fuelPrice',t.fuelPrice);set('e_freight',t.freight);set('e_taxable',t.taxable);
+ set('e_perDiem',t.perDiem);set('e_logistics',t.logistics);set('e_other',t.other);set('e_hours',t.hours);set('e_receiver',t.receiver);set('e_routeDistance',t.routeDistance||findDistance(t.loadCity,t.unloadCity));set('e_status',t.status||'Запланований');
+}
+function saveEditedTrip(i){
+ const t=db.trips[i];
+ const get=id=>document.getElementById(id)?.value||'';
+ t.customer=get('e_customer');t.loadDate=get('e_loadDate');t.unloadDate=get('e_unloadDate');t.loadCity=get('e_loadCity').trim().toUpperCase();t.unloadCity=get('e_unloadCity').trim().toUpperCase();
+ t.empty=Number(get('e_empty')||0);t.loaded=Number(get('e_loaded')||0);t.fuelPrice=Number(get('e_fuelPrice')||0);t.freight=Number(get('e_freight')||0);
+ t.taxable=Number(get('e_taxable')||0);t.perDiem=Number(get('e_perDiem')||0);t.logistics=Number(get('e_logistics')||0);t.other=Number(get('e_other')||0);
+ t.hours=Number(get('e_hours')||0);t.receiver=get('e_receiver');t.routeDistance=Number(get('e_routeDistance')||findDistance(t.loadCity,t.unloadCity)||0);t.payment=get('e_payment');t.status=get('e_status')||t.status||'Запланований';
+ const di=get('e_driver');t.driverId=di;t.driverName=(db.drivers||[])[Number(di)]?.name||'';const vi=get('e_vehicle');t.vehicleId=vi;t.vehicleNumber=(db.vehicles||[])[Number(vi)]?.number||'';const li=get('e_logistician');t.logisticianId=li;
+ const l=li!==''?(db.logisticians||[])[Number(li)]:null;t.logisticianName=l?.name||'';t.logisticianPhone=l?.phone||'';t.logisticianRating=l?.rating||'';
+ t.imported=false;t.dirty=true;calc(t);syncVehicleMileage();save();trips();
+}
+function del(key,i){
+ if(!confirm('Видалити запис?')) return;
+ if(key==='trips'){
+   const trip=db.trips[i];
+   const uid=trip?.uid;
+   db.trips.splice(i,1);
+   if(uid) db.tripDocuments=(db.tripDocuments||[]).filter(d=>String(d.tripId)!==String(uid) && Number(d.tripId)!==i);
+   syncVehicleMileage(); save(); trips(); return;
+ }
+ db[key].splice(i,1); save(); page(key==='expenses'?'expenses':key);
+}
+function showLogin(){
+ const overlay=document.createElement('div'); overlay.id='loginOverlay';
+ overlay.innerHTML=`<div id="loginBox"><h2>🔐 ProMax</h2><p>Для запуску транспортної бази введіть пароль.</p><div id="loginError"></div><input id="loginPassword" type="password" autocomplete="current-password" placeholder="Пароль"><button class="primary" id="loginBtn">Увійти</button><p class="small">Початковий пароль: <b>1234</b>. Після входу його можна змінити у «Резервна копія».</p></div>`;
+ document.body.appendChild(overlay);
+ const pass=localStorage.getItem('promax_access_password')||'1234';
+ const input=document.getElementById('loginPassword'),btn=document.getElementById('loginBtn'),err=document.getElementById('loginError');
+ function login(){ if(input.value===pass){overlay.remove(); if(syncConfigured()){cloudPull(false).finally(()=>{startSyncPolling();page('dashboard')});} else page('dashboard');} else {err.textContent='Невірний пароль.';input.select();} }
+ btn.onclick=login; input.addEventListener('keydown',e=>{if(e.key==='Enter')login()}); setTimeout(()=>input.focus(),50);
+}
+function changeAccessPassword(){
+ const current=prompt('Введіть поточний пароль:'); if(current===null)return; const old=localStorage.getItem('promax_access_password')||'1234'; if(current!==old){alert('Невірний поточний пароль.');return;}
+ const next=prompt('Введіть новий пароль (мінімум 4 символи):'); if(next===null)return; if(next.length<4){alert('Пароль має містити щонайменше 4 символи.');return;}
+ localStorage.setItem('promax_access_password',next); alert('Пароль змінено.');
+}
+function navigateFromMenu(p){document.getElementById('mobileMore')?.classList.remove('open'); page(p); updateMobileNav(p);}
+function updateMobileNav(p){
+ document.querySelectorAll('#nav button,[data-page]').forEach(b=>{if(b.dataset.page)b.classList.toggle('active',b.dataset.page===p)});
+}
+document.querySelectorAll('#nav button,[data-page]').forEach(b=>{if(b.dataset.page)b.onclick=()=>navigateFromMenu(b.dataset.page)});
+const mobileMoreBtn=document.getElementById('mobileMoreBtn');
+if(mobileMoreBtn) mobileMoreBtn.onclick=()=>document.getElementById('mobileMore').classList.toggle('open');
+document.addEventListener('click',e=>{const m=document.getElementById('mobileMore'),btn=document.getElementById('mobileMoreBtn');if(m&&m.classList.contains('open')&&!m.contains(e.target)&&e.target!==btn&&!btn?.contains(e.target))m.classList.remove('open')});
+setInterval(()=>{const c=document.getElementById('clock');if(c)c.textContent=new Date().toLocaleString('uk-UA')},1000);
+/* ===== ProMax one-click app / PWA ===== */
+let deferredInstallPrompt=null;
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstallPrompt=e;const b=document.getElementById('installBtn');if(b)b.style.display='inline-block';});
+window.addEventListener('appinstalled',()=>{deferredInstallPrompt=null;const b=document.getElementById('installBtn');if(b)b.style.display='none';});
+async function installProMax(){if(!deferredInstallPrompt){alert('У Chrome/Edge відкрийте меню браузера та виберіть «Встановити ProMax» або «Додати на головний екран».');return}deferredInstallPrompt.prompt();await deferredInstallPrompt.userChoice;deferredInstallPrompt=null;const b=document.getElementById('installBtn');if(b)b.style.display='none';}
+if('serviceWorker' in navigator && (location.protocol==='http:'||location.protocol==='https:')) navigator.serviceWorker.register('ProMax_MOBILE_CLOUD-sw.js').catch(()=>{});
+
+/* ===== ProMax Supabase Cloud v1 ===== */
+const PROMAX_SUPABASE_URL='https://segowllqttoqgqlbypqd.supabase.co';
+const PROMAX_SUPABASE_KEY='sb_publishable_-mnJ8MZzLck5J1KWkXi31Q_3QZTzPCC';
+const supabaseClient=window.supabase.createClient(PROMAX_SUPABASE_URL,PROMAX_SUPABASE_KEY);
+const SUPABASE_WORKSPACE='promax-main';
+let promaxUser=null,promaxProfile=null,supaChannel=null,supaReady=true;
+let syncTimer=null,syncBusy=false,syncDirty=false,syncQueue=false;
+
+function syncConfigured(){return !!supaReady && !!promaxUser;}
+function syncStatus(text,ok){const el=document.getElementById('syncStatus');if(el){el.textContent=text;el.style.color=ok?'#15803d':'#b45309';}}
+function syncData(){const copy=JSON.parse(JSON.stringify(db));delete copy.__syncMeta;return copy;}
+function saveLocalOnly(){try{localStorage.setItem(KEY,JSON.stringify(db));return true}catch(e){return false;}}
+function localDataHasContent(){const d=syncData();return ['trips','expenses','customers','drivers','logisticians','vehicles','cities','distances','debts','maintenance','tripDocuments'].some(k=>Array.isArray(d[k])&&d[k].length>0);}
+function remoteDataHasContent(data){if(!data||typeof data!=='object')return false;return ['trips','expenses','customers','drivers','logisticians','vehicles','cities','distances','debts','maintenance','tripDocuments'].some(k=>Array.isArray(data[k])&&data[k].length>0);}
+async function getRemoteState(){
+  const {data,error}=await supabaseClient.from('promax_state').select('*').eq('workspace',SUPABASE_WORKSPACE).maybeSingle();
+  if(error)throw error;
+  return data;
+}
+async function cloudPull(show=false){
+  if(!syncConfigured()){if(show)alert('Спочатку увійдіть у ProMax.');return false;}
+  if(syncBusy){syncQueue=true;return false;}
+  syncBusy=true; syncStatus('🔄 Отримую центральну базу…',false);
+  try{
+    const remote=await getRemoteState();
+    if(!remote){syncStatus('🟡 Центральна база відсутня',false);if(show)alert('У Supabase ще немає центральної бази.');return false;}
+    const rv=Number(remote.version||0),lv=Number(localStorage.getItem('promax_server_version')||0);
+    if(rv===lv&&lv>0){syncDirty=false;syncStatus('🟢 Дані актуальні · версія '+rv,true);return true;}
+    if(!remoteDataHasContent(remote.state)&&localDataHasContent()&&rv<=1){
+      syncDirty=true; syncStatus('🟡 Центральна база порожня · локальні дані збережені',false);
+      if(show)alert('Центральна база Supabase ще порожня. Ваші локальні дані НЕ замінені. На ПК відкрийте «Резервна копія → Хмарна синхронізація» та натисніть «⬆️ Передати локальну базу».');
+      return false;
+    }
+    Object.keys(remote.state||{}).forEach(k=>db[k]=remote.state[k]);
+    db.__syncMeta={version:rv,updatedAt:remote.updated_at||''};
+    saveLocalOnly();
+    localStorage.setItem('promax_server_version',String(rv));
+    localStorage.setItem('promax_last_cloud_update',remote.updated_at||'');
+    localStorage.setItem('promax_last_sync',new Date().toISOString());
+    syncDirty=false; syncStatus('🟢 Отримано центральну базу · версія '+rv,true);
+    if(show)page('dashboard');
+    return true;
+  }catch(e){console.error('ProMax Supabase pull',e);syncStatus('🔴 Помилка: '+(e.message||e),false);if(show)alert('Не вдалося отримати базу Supabase.\n\n'+(e.message||e));return false;}
+  finally{syncBusy=false;if(syncQueue){syncQueue=false;setTimeout(()=>syncDirty?cloudPush(false):cloudPull(false),200);}}
+}
+async function cloudPush(show=true){
+  if(!syncConfigured()){if(show)alert('Спочатку увійдіть у ProMax.');return false;}
+  if(syncBusy){syncQueue=true;return false;}
+  syncBusy=true;syncStatus('🔄 Зберігаю зміни у хмарі…',false);
+  try{
+    const remote=await getRemoteState();
+    const expected=Number(localStorage.getItem('promax_server_version')||0);
+    if(remote&&Number(remote.version||0)!==expected&&expected>0){
+      syncBusy=false;await cloudPull(show);if(show)alert('База була змінена на іншому пристрої. Завантажено найновішу версію. Перевірте останні зміни.');return false;
+    }
+    const nextVersion=Math.max(Number(remote?.version||0),expected,1)+1;
+    const payload={workspace:SUPABASE_WORKSPACE,version:nextVersion,state:syncData(),updated_by:promaxUser.id,updated_at:new Date().toISOString()};
+    const {data,error}=await supabaseClient.from('promax_state').update(payload).eq('workspace',SUPABASE_WORKSPACE).eq('version',Number(remote?.version||expected||0)).select().maybeSingle();
+    if(error)throw error;
+    if(!data){syncBusy=false;await cloudPull(show);if(show)alert('Інший пристрій встиг змінити базу. Завантажено нову версію.');return false;}
+    localStorage.setItem('promax_server_version',String(data.version));
+    localStorage.setItem('promax_last_cloud_update',data.updated_at||new Date().toISOString());
+    localStorage.setItem('promax_last_sync',new Date().toISOString());
+    syncDirty=false;syncStatus('🟢 Зміни збережені у Supabase · версія '+data.version,true);return true;
+  }catch(e){console.error('ProMax Supabase push',e);syncStatus('🟠 Локально збережено · хмара недоступна',false);if(show)alert('Не вдалося зберегти зміни у Supabase.\n\n'+(e.message||e));return false;}
+  finally{syncBusy=false;if(syncQueue){syncQueue=false;setTimeout(()=>syncDirty?cloudPush(false):cloudPull(false),200);}}
+}
+function saveCloudSettings(){alert('Параметри Supabase вже вбудовані у цю версію ProMax. Для зміни підключення зверніться до адміністратора системи.');}
+async function bootstrapLocalToServer(){
+  if(!syncConfigured()){alert('Спочатку увійдіть у ProMax.');return false;}
+  const remote=await getRemoteState();
+  if(remote&&remoteDataHasContent(remote.state)){alert('Центральна база вже містить дані (версія '+remote.version+'). Для безпеки локальна база не буде перезаписана.');return false;}
+  if(!localDataHasContent()){alert('На цьому пристрої немає даних для передачі.');return false;}
+  if(!confirm('Передати поточну локальну базу ProMax у центральну Supabase-базу?\n\nЦе буде перша центральна версія.'))return false;
+  syncDirty=true;return await cloudPush(true);
+}
+async function forceRestoreCentralFromLocal(){
+  if(!syncConfigured()){alert('Спочатку увійдіть у ProMax.');return false;}
+  if(!confirm('УВАГА!\n\nЗамінити центральну базу даними з цього пристрою?\n\nЦю дію використовуйте тільки для початкового перенесення або аварійного відновлення.'))return false;
+  try{
+    const remote=await getRemoteState();
+    const nextVersion=Number(remote?.version||0)+1;
+    const {data,error}=await supabaseClient.from('promax_state').update({version:nextVersion,state:syncData(),updated_by:promaxUser.id,updated_at:new Date().toISOString()}).eq('workspace',SUPABASE_WORKSPACE).select().single();
+    if(error)throw error;
+    localStorage.setItem('promax_server_version',String(data.version));localStorage.setItem('promax_last_cloud_update',data.updated_at);syncDirty=false;syncStatus('🟢 Центральну базу відновлено · версія '+data.version,true);alert('Центральну базу оновлено.');return true;
+  }catch(e){alert('Не вдалося відновити центральну базу.\n\n'+(e.message||e));return false;}
+}
+function syncNow(){return cloudPull(true);}
+function scheduleCloudPush(){syncDirty=true;clearTimeout(syncTimer);if(syncConfigured())syncTimer=setTimeout(()=>cloudPush(false),700);}
+function startSyncPolling(){clearInterval(syncPoll);if(!syncConfigured())return;setTimeout(()=>cloudPull(false),300);}
+function setupRealtime(){
+  if(supaChannel){supabaseClient.removeChannel(supaChannel);supaChannel=null;}
+  if(!syncConfigured())return;
+  supaChannel=supabaseClient.channel('promax-state-live').on('postgres_changes',{event:'*',schema:'public',table:'promax_state',filter:'workspace=eq.'+SUPABASE_WORKSPACE},payload=>{
+    const rv=Number(payload.new?.version||0),lv=Number(localStorage.getItem('promax_server_version')||0);
+    if(rv>lv&&!syncBusy&&!syncDirty)cloudPull(false);
+    else if(rv>lv&&syncDirty)syncStatus('🟠 Є нові зміни на іншому пристрої · збережіть/перевірте свої дані',false);
+  }).subscribe();
+}
+async function initSupabaseAuth(){
+  const {data,error}=await supabaseClient.auth.getSession();
+  if(error)console.error(error);
+  if(data?.session){promaxUser=data.session.user;await loadPromaxProfile();return;}
+  showLogin();
+}
+async function loadPromaxProfile(){
+  const {data,error}=await supabaseClient.from('profiles').select('id,full_name,role,active').eq('id',promaxUser.id).maybeSingle();
+  if(error)throw error;
+  promaxProfile=data;
+  if(data&&!data.active){await supabaseClient.auth.signOut();promaxUser=null;alert('Ваш обліковий запис деактивований.');showLogin();return;}
+  setupRealtime();startSyncPolling();page('dashboard');
+}
+async function loginSupabase(email,password){
+  const {data,error}=await supabaseClient.auth.signInWithPassword({email,password});
+  if(error)throw error;
+  promaxUser=data.user;await loadPromaxProfile();
+}
+async function logoutProMax(){await supabaseClient.auth.signOut();if(supaChannel){await supabaseClient.removeChannel(supaChannel);supaChannel=null;}promaxUser=null;promaxProfile=null;showLogin();}
+function showLogin(){
+  const old=document.getElementById('loginOverlay');if(old)old.remove();
+  const overlay=document.createElement('div');overlay.id='loginOverlay';
+  overlay.innerHTML=`<div id="loginBox"><h2>🔐 ProMax</h2><p>Увійдіть у хмарну систему ProMax.</p><div id="loginError"></div><label>Email</label><input id="loginEmail" type="email" autocomplete="username" placeholder="Ваш email"><label>Пароль</label><input id="loginPassword" type="password" autocomplete="current-password" placeholder="Пароль"><button class="primary" id="loginBtn">Увійти</button><p class="small" style="margin-top:14px">Облікові записи створюються адміністратором у Supabase. Локальний пароль 1234 більше не використовується.</p></div>`;
+  document.body.appendChild(overlay);
+  const email=document.getElementById('loginEmail'),pass=document.getElementById('loginPassword'),btn=document.getElementById('loginBtn'),err=document.getElementById('loginError');
+  async function go(){err.textContent='';btn.disabled=true;btn.textContent='Вхід…';try{await loginSupabase(email.value.trim(),pass.value);overlay.remove();}catch(e){err.textContent='Помилка входу: '+(e.message||'перевірте email і пароль');}finally{btn.disabled=false;btn.textContent='Увійти';}}
+  btn.onclick=go;pass.addEventListener('keydown',e=>{if(e.key==='Enter')go();});email.addEventListener('keydown',e=>{if(e.key==='Enter')pass.focus();});setTimeout(()=>email.focus(),100);
+}
+function cloudSettings(){
+  const name=promaxProfile?.full_name||promaxUser?.email||'Користувач';
+  const isAdmin=promaxProfile?.role==='admin';
+  const role=isAdmin?'Адміністратор':'Водій';
+  layout('Хмарна синхронізація',`<div class="card"><h3>☁️ ProMax Cloud</h3><p><b>Користувач:</b> ${esc(name)}</p><p><b>Роль:</b> ${role}</p><p><b>Центральна база:</b> Supabase · workspace <b>${SUPABASE_WORKSPACE}</b></p><div id="syncStatus" class="small">${syncConfigured()?'🟢 Підключено до хмари':'🟡 Не підключено'}</div><p><button class="edit" onclick="cloudPull(true)">⬇️ Отримати центральну базу</button> <button class="primary" onclick="syncNow()">🔄 Синхронізувати зараз</button></p>${isAdmin?`<p><button class="edit" onclick="bootstrapLocalToServer()">⬆️ Передати локальну базу</button> <button class="danger" onclick="forceRestoreCentralFromLocal()">🔴 Відновити центральну базу з цього пристрою</button></p>`:''}<p class="small">Синхронізація працює напряму через Інтернет із Supabase. ПК не потрібно залишати увімкненим для доступу водія.</p><p><button class="danger" onclick="logoutProMax()">🚪 Вийти</button></p></div>`);
+}
+function backup(){layout('Резервна копія',`<div class="card"><p>Збереження локальної копії та хмарна синхронізація.</p><button class="primary" onclick="exportDB()">Експорт бази</button> <button class="primary" onclick="importDB()">Імпорт бази</button> <button class="edit" onclick="cloudSettings()">☁️ Хмарна синхронізація</button><input type="file" id="imp" accept=".json" style="display:none" onchange="doImport(event)"><p class="small">Рекомендується робити JSON-резервну копію перед великими змінами.</p></div>`);}
+
+// Supabase Auth replaces the old local-only password gate.
+supabaseClient.auth.onAuthStateChange((event,session)=>{
+  if(session&&session.user){promaxUser=session.user;setTimeout(()=>loadPromaxProfile().catch(e=>{console.error(e);alert('Не вдалося завантажити профіль: '+(e.message||e));}),0);}
+  else if(event==='SIGNED_OUT'){promaxUser=null;promaxProfile=null;}
+});
+initSupabaseAuth();
+
+</script>
+</body></html>
