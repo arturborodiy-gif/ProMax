@@ -832,7 +832,7 @@ async function forceRestoreCentralFromLocal(){
 }
 function syncNow(){return cloudPull(true);}
 function scheduleCloudPush(){syncDirty=true;clearTimeout(syncTimer);if(syncConfigured())syncTimer=setTimeout(()=>cloudPush(false),700);}
-function startSyncPolling(){clearInterval(syncPoll);if(!syncConfigured())return;setTimeout(()=>cloudPull(false),300);}
+function startSyncPolling(){if(!syncConfigured())return;setTimeout(()=>cloudPull(false),300);}
 function setupRealtime(){
   if(supaChannel){supabaseClient.removeChannel(supaChannel);supaChannel=null;}
   if(!syncConfigured())return;
