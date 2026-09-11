@@ -394,6 +394,7 @@ function drivers(){
   layout('Водії',form+table(['ПІБ','Телефон','Км','Прибуток','Примітки',''],rows));
 }
 function vehicles(){
+ (db.vehicles||[]).forEach(v=>{if(String(v.number||'').replace(/\\s+/g,'').toUpperCase()==='AX9426PB' && !v.photoUrl)v.photoUrl='ProMax-truck.jpg';});
  syncVehicleMileage();
  const rows=(db.vehicles||[]).map((v,i)=>{
   const ts=db.trips.filter(t=>String(t.vehicleId)===String(i));
@@ -736,8 +737,10 @@ function ensureVehiclePhoto(){
   return changed;
 }
 function vehiclePhoto(v){
-  const src=v?.photoUrl||'';
-  return src?`<img src="${esc(src)}" alt="${esc(v.number||'Автомобіль')}" style="width:100%;max-width:420px;height:260px;object-fit:cover;border-radius:12px;border:1px solid #d8dee6;display:block;margin-bottom:12px" onerror="this.style.display='none'">`:'';
+  if(!v)return '';
+  const normalized=String(v.number||'').replace(/\\s+/g,'').toUpperCase();
+  const src=v.photoUrl || (normalized==='AX9426PB' ? 'ProMax-truck.jpg' : '');
+  return src?`<div style="display:inline-block;vertical-align:top;margin-right:18px;margin-bottom:12px"><img src="${esc(src)}" alt="${esc(v.number||'Автомобіль')}" style="width:100%;max-width:520px;height:320px;object-fit:cover;border-radius:12px;border:1px solid #d8dee6;display:block" onerror="this.style.display='none'"><div style="font-weight:700;margin-top:8px">${esc(v.number||'Автомобіль')} — ${esc(v.model||'')}</div></div>`:'';
 }
 
 function navigateFromMenu(p){document.getElementById('mobileMore')?.classList.remove('open'); page(p); updateMobileNav(p);}
