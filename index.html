@@ -716,15 +716,15 @@ function del(key,i){
 }
 function showLogin(){
  const overlay=document.createElement('div'); overlay.id='loginOverlay';
- overlay.innerHTML=`<div id="loginBox"><h2>🔐 ProMax</h2><p>Для запуску транспортної бази введіть пароль.</p><div id="loginError"></div><input id="loginPassword" type="password" autocomplete="current-password" placeholder="Пароль"><button class="primary" id="loginBtn">Увійти</button><p class="small">Початковий пароль: <b>1234</b>. Після входу його можна змінити у «Резервна копія».</p></div>`;
+ overlay.innerHTML=`<div id="loginBox"><h2>🔐 ProMax</h2><p>Для запуску транспортної бази введіть пароль.</p><div id="loginError"></div><input id="loginPassword" type="password" autocomplete="current-password" placeholder="Пароль"><button class="primary" id="loginBtn">Увійти</button><p class="small">Початковий пароль: <b>123456</b>. Після входу його можна змінити у «Резервна копія».</p></div>`;
  document.body.appendChild(overlay);
- const pass=localStorage.getItem('promax_access_password')||'1234';
+ const pass=localStorage.getItem('promax_access_password')||'123456';
  const input=document.getElementById('loginPassword'),btn=document.getElementById('loginBtn'),err=document.getElementById('loginError');
  function login(){ if(input.value===pass){overlay.remove(); if(syncConfigured()){cloudPull(false).finally(()=>{startSyncPolling();page('dashboard')});} else page('dashboard');} else {err.textContent='Невірний пароль.';input.select();} }
  btn.onclick=login; input.addEventListener('keydown',e=>{if(e.key==='Enter')login()}); setTimeout(()=>input.focus(),50);
 }
 function changeAccessPassword(){
- const current=prompt('Введіть поточний пароль:'); if(current===null)return; const old=localStorage.getItem('promax_access_password')||'1234'; if(current!==old){alert('Невірний поточний пароль.');return;}
+ const current=prompt('Введіть поточний пароль:'); if(current===null)return; const old=localStorage.getItem('promax_access_password')||'123456'; if(current!==old){alert('Невірний поточний пароль.');return;}
  const next=prompt('Введіть новий пароль (мінімум 4 символи):'); if(next===null)return; if(next.length<4){alert('Пароль має містити щонайменше 4 символи.');return;}
  localStorage.setItem('promax_access_password',next); alert('Пароль змінено.');
 }
@@ -880,7 +880,7 @@ async function logoutProMax(){await supabaseClient.auth.signOut();if(supaChannel
 function showLogin(){
   const old=document.getElementById('loginOverlay');if(old)old.remove();
   const overlay=document.createElement('div');overlay.id='loginOverlay';
-  overlay.innerHTML=`<div id="loginBox"><h2>🔐 ProMax</h2><p>Увійдіть у хмарну систему ProMax.</p><div id="loginError"></div><label>Email</label><input id="loginEmail" type="email" autocomplete="username" placeholder="Ваш email"><label>Пароль</label><input id="loginPassword" type="password" autocomplete="current-password" placeholder="Пароль"><button class="primary" id="loginBtn">Увійти</button><p class="small" style="margin-top:14px">Початковий пароль ProMax: <b>1234</b>. Після входу його можна змінити у «Резервна копія». Новий пароль буде спільним для Windows і смартфона.</p></div>`;
+  overlay.innerHTML=`<div id="loginBox"><h2>🔐 ProMax</h2><p>Увійдіть у хмарну систему ProMax.</p><div id="loginError"></div><label>Email</label><input id="loginEmail" type="email" autocomplete="username" placeholder="Ваш email"><label>Пароль</label><input id="loginPassword" type="password" autocomplete="current-password" placeholder="Пароль"><button class="primary" id="loginBtn">Увійти</button><p class="small" style="margin-top:14px">Початковий пароль ProMax: <b>123456</b>. Після входу його можна змінити у «Резервна копія». Новий пароль буде спільним для Windows і смартфона.</p></div>`;
   document.body.appendChild(overlay);
   const email=document.getElementById('loginEmail'),pass=document.getElementById('loginPassword'),btn=document.getElementById('loginBtn'),err=document.getElementById('loginError');
   async function go(){err.textContent='';btn.disabled=true;btn.textContent='Вхід…';try{await loginSupabase(email.value.trim(),pass.value);overlay.remove();}catch(e){err.textContent='Помилка входу: '+(e.message||'перевірте email і пароль');}finally{btn.disabled=false;btn.textContent='Увійти';}}
@@ -888,8 +888,8 @@ function showLogin(){
 }
 async function setInitialCloudPassword(){
   if(!promaxUser){alert('Спочатку увійдіть у ProMax.');return;}
-  if(!confirm('Встановити пароль ProMax: 1234?\n\nПісля цього цей самий пароль можна використовувати на Windows і смартфоні.'))return;
-  try{const {error}=await supabaseClient.auth.updateUser({password:'1234'});if(error)throw error;alert('Початковий пароль 1234 встановлено. Тепер він працює на всіх пристроях.');}
+  if(!confirm('Встановити пароль ProMax: 123456?\n\nПісля цього цей самий пароль можна використовувати на Windows і смартфоні.'))return;
+  try{const {error}=await supabaseClient.auth.updateUser({password:'123456'});if(error)throw error;alert('Початковий пароль 123456 встановлено. Тепер він працює на всіх пристроях.');}
   catch(e){alert('Не вдалося встановити пароль.\n\n'+(e.message||e));}
 }
 async function changeCloudPassword(){
@@ -908,7 +908,7 @@ function cloudSettings(){
   const role=isAdmin?'Адміністратор':'Водій';
   layout('Хмарна синхронізація',`<div class="card"><h3>☁️ ProMax Cloud</h3><p><b>Користувач:</b> ${esc(name)}</p><p><b>Роль:</b> ${role}</p><p><b>Центральна база:</b> Supabase · workspace <b>${SUPABASE_WORKSPACE}</b></p><div id="syncStatus" class="small">${syncConfigured()?'🟢 Підключено до хмари':'🟡 Не підключено'}</div><p><button class="edit" onclick="cloudPull(true)">⬇️ Отримати центральну базу</button> <button class="primary" onclick="syncNow()">🔄 Синхронізувати зараз</button></p>${isAdmin?`<p><button class="edit" onclick="bootstrapLocalToServer()">⬆️ Передати локальну базу</button> <button class="danger" onclick="forceRestoreCentralFromLocal()">🔴 Відновити центральну базу з цього пристрою</button></p>`:''}<p class="small">Синхронізація працює напряму через Інтернет із Supabase. ПК не потрібно залишати увімкненим для доступу водія.</p><p><button class="danger" onclick="logoutProMax()">🚪 Вийти</button></p></div>`);
 }
-function backup(){layout('Резервна копія',`<div class="card"><p>Збереження локальної копії та хмарна синхронізація.</p><button class="primary" onclick="exportDB()">Експорт бази</button> <button class="primary" onclick="importDB()">Імпорт бази</button> <button class="edit" onclick="cloudSettings()">☁️ Хмарна синхронізація</button><button class="edit" onclick="changeCloudPassword()">🔑 Змінити пароль ProMax</button><button class="edit" onclick="setInitialCloudPassword()">🔐 Встановити початковий пароль 1234</button><input type="file" id="imp" accept=".json" style="display:none" onchange="doImport(event)"><p class="small">Пароль ProMax є паролем вашого хмарного облікового запису. Після встановлення 1234 він однаковий на Windows і смартфоні.</p></div>`);}
+function backup(){layout('Резервна копія',`<div class="card"><p>Збереження локальної копії та хмарна синхронізація.</p><button class="primary" onclick="exportDB()">Експорт бази</button> <button class="primary" onclick="importDB()">Імпорт бази</button> <button class="edit" onclick="cloudSettings()">☁️ Хмарна синхронізація</button><button class="edit" onclick="changeCloudPassword()">🔑 Змінити пароль ProMax</button><button class="edit" onclick="setInitialCloudPassword()">🔐 Встановити початковий пароль 123456</button><input type="file" id="imp" accept=".json" style="display:none" onchange="doImport(event)"><p class="small">Пароль ProMax є паролем вашого хмарного облікового запису. Після встановлення 123456 він однаковий на Windows і смартфоні.</p></div>`);}
 
 // Supabase Auth replaces the old local-only password gate.
 supabaseClient.auth.onAuthStateChange((event,session)=>{
