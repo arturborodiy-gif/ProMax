@@ -416,12 +416,12 @@ function vehicles(){
  const workForm=`<div class="card"><h3>🔧 Додати технічну роботу / ремонт</h3><div class="grid"><div><label>Автомобіль</label><select id="mvehicle"><option value="">— виберіть —</option>${(db.vehicles||[]).map((v,i)=>`<option value="${i}">${esc(v.number)} — ${esc(v.model)}</option>`).join('')}</select></div>${field('Дата','mdate','date')}${field('Кілометраж','mkm','number')}${field('Вид роботи','mtype')}${field('Що зроблено','mdesc')}${field('Запчастини, грн','mparts','number')}${field('Робота, грн','mlabor','number')}${field('СТО / майстер','mservice')}${field('Гарантія / примітка','mnote')}</div><button class="primary" onclick="addMaintenance()">Зберегти ТО / ремонт</button></div>`;
  const maintenanceRows=(db.maintenance||[]).slice().sort((a,b)=>String(b.date).localeCompare(String(a.date))).map((m,i)=>{const v=db.vehicles[Number(m.vehicleId)]||{};return `<tr><td>${esc(m.date)}</td><td>${esc(v.number||'')}</td><td>${Math.round(Number(m.km||0))}</td><td>${esc(m.type)}</td><td>${esc(m.desc)}</td><td>${money(m.parts)}</td><td>${money(m.labor)}</td><td>${money(m.total)}</td><td>${esc(m.service)}</td><td>${esc(m.note)}</td><td><button class="danger" onclick="deleteMaintenance(${i})">Видалити</button></td></tr>`}).join('');
  const financeRows=(db.vehicles||[]).map((v,i)=>{const ts=db.trips.filter(t=>String(t.vehicleId)===String(i));const km=ts.reduce((s,t)=>s+Number(t.total||0),0);const revenue=ts.reduce((s,t)=>s+Number(t.freight||0),0);const tripCosts=ts.reduce((s,t)=>s+Number(t.perDiem||0)+Number(t.logistics||0)+Number(t.other||0)+Number(t.tax||0)+Number(t.fuelCost||0),0);const ext=(db.expenses||[]).filter(e=>String(e.vehicleId)===String(i)).reduce((s,e)=>s+Number(e.amount||0),0);const maint=(db.maintenance||[]).filter(m=>String(m.vehicleId)===String(i)).reduce((s,m)=>s+Number(m.total||0),0);const totalCost=tripCosts+ext+maint;return `<tr><td>${esc(v.number)}</td><td>${ts.length}</td><td>${Math.round(km)}</td><td>${money(revenue)}</td><td>${money(tripCosts)}</td><td>${money(ext)}</td><td>${money(maint)}</td><td><b>${money(revenue-totalCost)}</b></td><td>${money(km?totalCost/km:0)}</td></tr>`}).join('');
- layout('Автомобілі',form+workForm+`<div class="card"><h3>Контроль мастила та технічний стан</h3>${table(['Держномер','Модель','Тонн','Поточний пробіг','Остання заміна','Інтервал','Після заміни','Статус','Робіт','ТО/ремонт','Фін. результат','Собівартість/км','Дії'],rows||'<tr><td colspan="13">Автомобілів немає.</td></tr>')}</div><div class="card"><h3>📊 Фінансовий результат по автомобілях</h3><p class="small">Фрахт мінус витрати рейсів, прив’язані витрати, ТО та ремонти.</p>${table(['Авто','Рейсів','Км','Фрахт','Витрати рейсів','Інші витрати','ТО/ремонт','Фін. результат','Собівартість/км'],financeRows||'<tr><td colspan="9">Даних немає.</td></tr>')}</div><div class="card"><h3>Журнал ТО та ремонтів</h3>${table(['Дата','Авто','Км','Вид роботи','Що зроблено','Запчастини','Робота','Разом','СТО / майстер','Примітка',''],maintenanceRows||'<tr><td colspan="11">Записів ще немає.</td></tr>')}</div>`);
+ layout('Автомобілі',((db.vehicles||[]).length?`<div class="card"><h3>🚛 Фотографія автомобіля</h3>${vehiclePhoto(db.vehicles.find(v=>String(v.number||'').replace(/\s+/g,'').toUpperCase()==='AX9426PB'))}<p class="small">Фото прив’язане до автомобіля AX 9426 PB і зберігається разом із даними автомобіля.</p></div>`:'')+form+workForm+`<div class="card"><h3>Контроль мастила та технічний стан</h3>${table(['Держномер','Модель','Тонн','Поточний пробіг','Остання заміна','Інтервал','Після заміни','Статус','Робіт','ТО/ремонт','Фін. результат','Собівартість/км','Дії'],rows||'<tr><td colspan="13">Автомобілів немає.</td></tr>')}</div><div class="card"><h3>📊 Фінансовий результат по автомобілях</h3><p class="small">Фрахт мінус витрати рейсів, прив’язані витрати, ТО та ремонти.</p>${table(['Авто','Рейсів','Км','Фрахт','Витрати рейсів','Інші витрати','ТО/ремонт','Фін. результат','Собівартість/км'],financeRows||'<tr><td colspan="9">Даних немає.</td></tr>')}</div><div class="card"><h3>Журнал ТО та ремонтів</h3>${table(['Дата','Авто','Км','Вид роботи','Що зроблено','Запчастини','Робота','Разом','СТО / майстер','Примітка',''],maintenanceRows||'<tr><td colspan="11">Записів ще немає.</td></tr>')}</div>`);
 }
 function addVehicle(){
  const number=val('vnumber').trim(); if(!number){alert('Введіть держномер.');return;}
  const base=Number(val('vodometer')||0),interval=Number(val('voilinterval')||10000);
- db.vehicles.push({number,model:val('vmodel'),payload:Number(val('vpayload')||0),baseOdo:base,currentOdo:base,lastOilKm:base,oilInterval:interval,note:val('vnote')});
+ db.vehicles.push({number,model:val('vmodel'),payload:Number(val('vpayload')||0),baseOdo:base,currentOdo:base,lastOilKm:base,oilInterval:interval,note:val('vnote'),photoUrl:String(number).replace(/\s+/g,'').toUpperCase()==='AX9426PB'?'ProMax-truck.jpg':''});
  save();vehicles();
 }
 function oilReset(i){
@@ -727,6 +727,19 @@ function changeAccessPassword(){
  const next=prompt('Введіть новий пароль (мінімум 4 символи):'); if(next===null)return; if(next.length<4){alert('Пароль має містити щонайменше 4 символи.');return;}
  localStorage.setItem('promax_access_password',next); alert('Пароль змінено.');
 }
+function ensureVehiclePhoto(){
+  let changed=false;
+  (db.vehicles||[]).forEach(v=>{
+    if(String(v.number||'').replace(/\s+/g,'').toUpperCase()==='AX9426PB' && v.photoUrl!=='ProMax-truck.jpg'){v.photoUrl='ProMax-truck.jpg';changed=true;}
+  });
+  if(changed) save();
+  return changed;
+}
+function vehiclePhoto(v){
+  const src=v?.photoUrl||'';
+  return src?`<img src="${esc(src)}" alt="${esc(v.number||'Автомобіль')}" style="width:100%;max-width:420px;height:260px;object-fit:cover;border-radius:12px;border:1px solid #d8dee6;display:block;margin-bottom:12px" onerror="this.style.display='none'">`:'';
+}
+
 function navigateFromMenu(p){document.getElementById('mobileMore')?.classList.remove('open'); page(p); updateMobileNav(p);}
 function updateMobileNav(p){
  document.querySelectorAll('#nav button,[data-page]').forEach(b=>{if(b.dataset.page)b.classList.toggle('active',b.dataset.page===p)});
@@ -853,7 +866,7 @@ async function loadPromaxProfile(){
   if(error)throw error;
   promaxProfile=data;
   if(data&&!data.active){await supabaseClient.auth.signOut();promaxUser=null;alert('Ваш обліковий запис деактивований.');showLogin();return;}
-  setupRealtime();startSyncPolling();page('dashboard');
+  setupRealtime();ensureVehiclePhoto();startSyncPolling();page('dashboard');
 }
 async function loginSupabase(email,password){
   const {data,error}=await supabaseClient.auth.signInWithPassword({email,password});
@@ -864,11 +877,27 @@ async function logoutProMax(){await supabaseClient.auth.signOut();if(supaChannel
 function showLogin(){
   const old=document.getElementById('loginOverlay');if(old)old.remove();
   const overlay=document.createElement('div');overlay.id='loginOverlay';
-  overlay.innerHTML=`<div id="loginBox"><h2>🔐 ProMax</h2><p>Увійдіть у хмарну систему ProMax.</p><div id="loginError"></div><label>Email</label><input id="loginEmail" type="email" autocomplete="username" placeholder="Ваш email"><label>Пароль</label><input id="loginPassword" type="password" autocomplete="current-password" placeholder="Пароль"><button class="primary" id="loginBtn">Увійти</button><p class="small" style="margin-top:14px">Облікові записи створюються адміністратором у Supabase. Локальний пароль 1234 більше не використовується.</p></div>`;
+  overlay.innerHTML=`<div id="loginBox"><h2>🔐 ProMax</h2><p>Увійдіть у хмарну систему ProMax.</p><div id="loginError"></div><label>Email</label><input id="loginEmail" type="email" autocomplete="username" placeholder="Ваш email"><label>Пароль</label><input id="loginPassword" type="password" autocomplete="current-password" placeholder="Пароль"><button class="primary" id="loginBtn">Увійти</button><p class="small" style="margin-top:14px">Початковий пароль ProMax: <b>1234</b>. Після входу його можна змінити у «Резервна копія». Новий пароль буде спільним для Windows і смартфона.</p></div>`;
   document.body.appendChild(overlay);
   const email=document.getElementById('loginEmail'),pass=document.getElementById('loginPassword'),btn=document.getElementById('loginBtn'),err=document.getElementById('loginError');
   async function go(){err.textContent='';btn.disabled=true;btn.textContent='Вхід…';try{await loginSupabase(email.value.trim(),pass.value);overlay.remove();}catch(e){err.textContent='Помилка входу: '+(e.message||'перевірте email і пароль');}finally{btn.disabled=false;btn.textContent='Увійти';}}
   btn.onclick=go;pass.addEventListener('keydown',e=>{if(e.key==='Enter')go();});email.addEventListener('keydown',e=>{if(e.key==='Enter')pass.focus();});setTimeout(()=>email.focus(),100);
+}
+async function setInitialCloudPassword(){
+  if(!promaxUser){alert('Спочатку увійдіть у ProMax.');return;}
+  if(!confirm('Встановити пароль ProMax: 1234?\n\nПісля цього цей самий пароль можна використовувати на Windows і смартфоні.'))return;
+  try{const {error}=await supabaseClient.auth.updateUser({password:'1234'});if(error)throw error;alert('Початковий пароль 1234 встановлено. Тепер він працює на всіх пристроях.');}
+  catch(e){alert('Не вдалося встановити пароль.\n\n'+(e.message||e));}
+}
+async function changeCloudPassword(){
+  if(!promaxUser){alert('Спочатку увійдіть у ProMax.');return;}
+  const next=prompt('Введіть новий пароль ProMax (мінімум 6 символів):');
+  if(next===null)return;
+  if(next.length<6){alert('Пароль має містити щонайменше 6 символів.');return;}
+  const confirmNext=prompt('Повторіть новий пароль:');
+  if(confirmNext!==next){alert('Паролі не збігаються.');return;}
+  try{const {error}=await supabaseClient.auth.updateUser({password:next});if(error)throw error;alert('Пароль ProMax успішно змінено. Новий пароль працюватиме на Windows і смартфоні.');}
+  catch(e){alert('Не вдалося змінити пароль.\n\n'+(e.message||e));}
 }
 function cloudSettings(){
   const name=promaxProfile?.full_name||promaxUser?.email||'Користувач';
@@ -876,7 +905,7 @@ function cloudSettings(){
   const role=isAdmin?'Адміністратор':'Водій';
   layout('Хмарна синхронізація',`<div class="card"><h3>☁️ ProMax Cloud</h3><p><b>Користувач:</b> ${esc(name)}</p><p><b>Роль:</b> ${role}</p><p><b>Центральна база:</b> Supabase · workspace <b>${SUPABASE_WORKSPACE}</b></p><div id="syncStatus" class="small">${syncConfigured()?'🟢 Підключено до хмари':'🟡 Не підключено'}</div><p><button class="edit" onclick="cloudPull(true)">⬇️ Отримати центральну базу</button> <button class="primary" onclick="syncNow()">🔄 Синхронізувати зараз</button></p>${isAdmin?`<p><button class="edit" onclick="bootstrapLocalToServer()">⬆️ Передати локальну базу</button> <button class="danger" onclick="forceRestoreCentralFromLocal()">🔴 Відновити центральну базу з цього пристрою</button></p>`:''}<p class="small">Синхронізація працює напряму через Інтернет із Supabase. ПК не потрібно залишати увімкненим для доступу водія.</p><p><button class="danger" onclick="logoutProMax()">🚪 Вийти</button></p></div>`);
 }
-function backup(){layout('Резервна копія',`<div class="card"><p>Збереження локальної копії та хмарна синхронізація.</p><button class="primary" onclick="exportDB()">Експорт бази</button> <button class="primary" onclick="importDB()">Імпорт бази</button> <button class="edit" onclick="cloudSettings()">☁️ Хмарна синхронізація</button><input type="file" id="imp" accept=".json" style="display:none" onchange="doImport(event)"><p class="small">Рекомендується робити JSON-резервну копію перед великими змінами.</p></div>`);}
+function backup(){layout('Резервна копія',`<div class="card"><p>Збереження локальної копії та хмарна синхронізація.</p><button class="primary" onclick="exportDB()">Експорт бази</button> <button class="primary" onclick="importDB()">Імпорт бази</button> <button class="edit" onclick="cloudSettings()">☁️ Хмарна синхронізація</button><button class="edit" onclick="changeCloudPassword()">🔑 Змінити пароль ProMax</button><button class="edit" onclick="setInitialCloudPassword()">🔐 Встановити початковий пароль 1234</button><input type="file" id="imp" accept=".json" style="display:none" onchange="doImport(event)"><p class="small">Пароль ProMax є паролем вашого хмарного облікового запису. Після встановлення 1234 він однаковий на Windows і смартфоні.</p></div>`);}
 
 // Supabase Auth replaces the old local-only password gate.
 supabaseClient.auth.onAuthStateChange((event,session)=>{
